@@ -1,5 +1,4 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    address_hash \
-    cds
+    basket_queue

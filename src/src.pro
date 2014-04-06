@@ -11,22 +11,20 @@ TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
+load(ultra_cds)
+
 
 ### Building settings ###
 
 DESTDIR = ../bin
 BOOST_PATH = $$PWD/../../boost_1_55_0
-CDS_PATH = $$PWD/../../cds-1.5.0
-CDS_LIB_PATH = $$CDS_PATH/bin/gcc-amd64-linux-0
-INCLUDEPATH += $$BOOST_PATH $$CDS_PATH
-DEPENDPATH += $$BOOST_PATH $$CDS_PATH
+INCLUDEPATH += $$BOOST_PATH
+DEPENDPATH += $$BOOST_PATH
 
 CONFIG(debug, debug|release) {
     CONFIG += warn_on
     MOC_DIR = ../bin/debug
     OBJECTS_DIR = ../bin/debug
-
-    LIBS += -L$$CDS_LIB_PATH -lcds-debug
 
     unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
                 -lboost_system-mt-s -lboost_context-mt-s
@@ -41,8 +39,6 @@ CONFIG(debug, debug|release) {
     CONFIG += warn_off
     MOC_DIR = ../bin/release
     OBJECTS_DIR = ../bin/release
-
-    LIBS += -L$$CDS_LIB_PATH -lcds
 
     unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
                 -lboost_system-mt-s -lboost_context-mt-s

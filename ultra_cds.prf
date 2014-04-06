@@ -1,0 +1,10 @@
+
+
+CDS_PATH = $$absolute_path($$PWD)/../cds-1.5.0
+CDS_LIB_PATH = $$CDS_PATH/bin/gcc-amd64-linux-0
+INCLUDEPATH += $$CDS_PATH
+
+CONFIG(debug, debug|release): \
+    LIBS += -L$$CDS_LIB_PATH -lcds-debug
+else: CONFIG(release, debug|release): \
+    LIBS += -L$$CDS_LIB_PATH -lcds
