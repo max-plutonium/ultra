@@ -27,7 +27,7 @@
 #   define ULTRA_UNLIKELY(V)
 #endif
 
-#include <bits/move.h>  //  std::addressof
+#include <bits/move.h> // std::addressof
 
 template <typename Tp>
 static constexpr Tp *_get_ptr(Tp *tp) { return tp; }

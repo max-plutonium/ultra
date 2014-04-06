@@ -33,13 +33,7 @@ CONFIG(debug, debug|release) {
     else: win32: LIBS += -L$$BOOST_PATH/stage/lib/debug/ \
                 -lboost_system-mt-d  -lboost_context-mt-d
 
-    *g++*: QMAKE_POST_LINK += \
-        $$QMAKE_OBJCOPY --only-keep-debug \
-            $$DESTDIR/$(TARGET) $$DESTDIR/$(TARGET).debug $$escape_expand(\\n\\t) \
-        $$QMAKE_OBJCOPY --strip-debug \
-            $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t) \
-        $$QMAKE_OBJCOPY --add-gnu-debuglink=$$DESTDIR/$(TARGET).debug \
-            $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t)
+    CONFIG += separate_debug_info
 
     TARGET = $$join(TARGET,,, -debug)
 

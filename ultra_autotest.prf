@@ -1,0 +1,13 @@
+
+
+BUILDROOT = $$absolute_path($$PWD)/bin
+DESTDIR = $$BUILDROOT/tests/auto
+
+CONFIG(debug, debug|release) {
+    MOC_DIR = $$BUILDROOT/debug/tests/auto
+    OBJECTS_DIR = $$BUILDROOT/debug/tests/auto
+
+} else: CONFIG(release, debug|release) {
+    MOC_DIR = $$BUILDROOT/release/tests/auto
+    OBJECTS_DIR = $$BUILDROOT/release/tests/auto
+}

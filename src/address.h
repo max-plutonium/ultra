@@ -7,17 +7,20 @@ namespace ultra ULTRA_EXPORT
 {
     struct ULTRA_EXPORT address
     {
-        constexpr address() noexcept : _x(0), _y(0), _z(0) { }
+        constexpr address() noexcept : _x(0), _y(0), _z(0)
+        { }
 
-        address(int ax, int ay, int az) : _x(ax), _y(ay), _z(az) { }
+        address(int ax, int ay, int az) noexcept : _x(ax), _y(ay), _z(az)
+        { }
 
         address(const std::initializer_list<int> &il)
-            : _x(il.begin()[0]), _y(il.begin()[1]), _z(il.begin()[2]) { }
+            : _x(il.begin()[0]), _y(il.begin()[1]), _z(il.begin()[2])
+        { }
 
         bool operator==(const address &o) const
         { return (_x == o._x && _y == o._y && _z == o._z); }
-        bool operator!=(const address &o) const
-        { return !operator==(o); }
+        bool operator!=(const address &o) const { return !operator==(o); }
+
         int x() const { return _x; }
         int y() const { return _y; }
         int z() const { return _z; }
