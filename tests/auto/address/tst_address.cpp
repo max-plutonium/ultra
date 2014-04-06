@@ -1,6 +1,5 @@
 #include <QString>
 #include <QtTest>
-#include <QCoreApplication>
 
 #include <random>
 #include "../../../src/address.h"
@@ -26,6 +25,7 @@ public:
         return distr(generator);
     }
 };
+
 
 void tst_address::testCase_data()
 {
@@ -89,7 +89,6 @@ void tst_address::testCase()
     QVERIFY(addr1 == addr2);
     QVERIFY(addr1 == addr4);
 }
-
 
 QTEST_APPLESS_MAIN(tst_address)
 
