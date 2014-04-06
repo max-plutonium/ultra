@@ -1,0 +1,10 @@
+*.[oa]
+*~
+*.so
+*.pro.user
+*.cpp.orig
+moc_*.cpp
+Makefile*
+bin/
+include/
+lib/

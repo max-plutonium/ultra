@@ -4,6 +4,7 @@
 #
 #-------------------------------------------------
 
+
 TEMPLATE = lib
 QT -= core gui
 TARGET = ultra
@@ -40,6 +41,8 @@ CONFIG(debug, debug|release) {
 }
 
 
+### Compiler settings ###
+
 *g++* {
     QMAKE_CXXFLAGS += \
         -std=gnu++11 -pthread -funwind-tables \
@@ -49,16 +52,24 @@ CONFIG(debug, debug|release) {
 }
 
 
-HEADERS += ultra.h \
+### Files ###
+
+HEADERS += \
+    ultra.h \
     ultra_global.h
 
-PRIVATE_HEADERS +=
+PRIVATE_HEADERS = $$files(*_p.h)
+PUBLIC_HEADERS = $$HEADERS
+PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 
-SOURCES += ultra.cpp
+SOURCES += \
+    ultra.cpp
 
+
+### Install settings ###
 
 headerTarget.path = ../include
-headerTarget.files = $$HEADERS
+headerTarget.files = $$PUBLIC_HEADERS
 
 target.path = ../lib
 INSTALLS += target headerTarget
