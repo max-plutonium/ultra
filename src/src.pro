@@ -15,11 +15,23 @@ VERSION = 0.0.0
 ### Building settings ###
 
 DESTDIR = ../bin
+BOOST_PATH = $$PWD/../../boost_1_55_0
+CDS_PATH = $$PWD/../../cds-1.5.0
+CDS_LIB_PATH = $$CDS_PATH/bin/gcc-amd64-linux-0
+INCLUDEPATH += $$BOOST_PATH $$CDS_PATH
+DEPENDPATH += $$BOOST_PATH $$CDS_PATH
 
 CONFIG(debug, debug|release) {
     CONFIG += warn_on
     MOC_DIR = ../bin/debug
     OBJECTS_DIR = ../bin/debug
+
+    LIBS += -L$$CDS_LIB_PATH -lcds-debug
+
+    unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
+                -lboost_system-mt-s -lboost_context-mt-s
+    else: win32: LIBS += -L$$BOOST_PATH/stage/lib/debug/ \
+                -lboost_system-mt-d  -lboost_context-mt-d
 
     *g++*: QMAKE_POST_LINK += \
         $$QMAKE_OBJCOPY --only-keep-debug \
@@ -35,6 +47,13 @@ CONFIG(debug, debug|release) {
     CONFIG += warn_off
     MOC_DIR = ../bin/release
     OBJECTS_DIR = ../bin/release
+
+    LIBS += -L$$CDS_LIB_PATH -lcds
+
+    unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
+                -lboost_system-mt-s -lboost_context-mt-s
+    else: win32: LIBS += -L$$BOOST_PATH/stage/lib/release/ \
+                -lboost_system-mt-s -lboost_context-mt-s
 
     *g++*: QMAKE_POST_LINK += \
         $$QMAKE_OBJCOPY --strip-unneeded $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t)
@@ -56,14 +75,17 @@ CONFIG(debug, debug|release) {
 
 HEADERS += \
     ultra.h \
-    ultra_global.h
+    ultra_global.h \
+    core.h \
+    address.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
 PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 
 SOURCES += \
-    ultra.cpp
+    ultra.cpp \
+    address.cpp
 
 
 ### Install settings ###
