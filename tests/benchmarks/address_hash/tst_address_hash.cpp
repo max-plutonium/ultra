@@ -9,49 +9,27 @@ class tst_address_hash : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
-    void testCase_data();
     void testCase();
 };
 
 
-class Generator
+void tst_address_hash::testCase()
 {
     std::uniform_int_distribution<int> distr;
     std::mt19937_64 generator;
 
-public:
-    int operator ()()
-    {
-        return distr(generator);
-    }
-};
+    std::vector<ultra::address> vec(1000000);
+    std::generate(vec.begin(), vec.end(), [&]() {
+            return ultra::address {
+                distr(generator), distr(generator), distr(generator)
+            };
+        });
 
-
-void tst_address_hash::testCase_data()
-{
-    QTest::addColumn<int>("x");
-    QTest::addColumn<int>("y");
-    QTest::addColumn<int>("z");
-
-    constexpr int numTests = 10;
-    Generator generator;
-
-    for(int i = 0; i < numTests; ++i)
-        QTest::newRow(qPrintable(QString::number(i)))
-                << generator() << generator() << generator();
-}
-
-void tst_address_hash::testCase()
-{
-    QFETCH(int, x);
-    QFETCH(int, y);
-    QFETCH(int, z);
-
-    ultra::address addr { x, y, z };
     ultra::address_hash hash;
 
     QBENCHMARK {
-        hash(addr);
+        for(const ultra::address &addr : vec)
+            hash(addr);
     }
 }
 
