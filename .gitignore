@@ -8,3 +8,4 @@ Makefile*
 bin/
 include/
 lib/
+/.project

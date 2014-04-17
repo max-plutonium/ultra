@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    basket_queue
+    basket_queue \
+    maps
