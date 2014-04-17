@@ -6,8 +6,10 @@ DESTDIR = $$BUILDROOT/tests/benchmarks
 CONFIG(debug, debug|release) {
     MOC_DIR = $$BUILDROOT/debug/tests/benchmarks
     OBJECTS_DIR = $$BUILDROOT/debug/tests/benchmarks
+    LIBS += -L$$BUILDROOT -lultra-debug
 
 } else: CONFIG(release, debug|release) {
     MOC_DIR = $$BUILDROOT/release/tests/benchmarks
     OBJECTS_DIR = $$BUILDROOT/release/tests/benchmarks
+    LIBS += -L$$BUILDROOT -lultra
 }

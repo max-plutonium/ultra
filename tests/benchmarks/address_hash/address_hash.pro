@@ -13,7 +13,5 @@ CONFIG -= app_bundle
 
 load(ultra_benchmark)
 
-LIBS += -L$$BUILDROOT -lultra
-
 SOURCES += tst_address_hash.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"
