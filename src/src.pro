@@ -12,24 +12,17 @@ DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
 load(ultra_cds)
+load(ultra_boost)
 
 
 ### Building settings ###
 
 DESTDIR = ../bin
-BOOST_PATH = $$PWD/../../boost_1_55_0
-INCLUDEPATH += $$BOOST_PATH
-DEPENDPATH += $$BOOST_PATH
 
 CONFIG(debug, debug|release) {
     CONFIG += warn_on
     MOC_DIR = ../bin/debug
     OBJECTS_DIR = ../bin/debug
-
-    unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
-                -lboost_system-mt-s -lboost_context-mt-s
-    else: win32: LIBS += -L$$BOOST_PATH/stage/lib/debug/ \
-                -lboost_system-mt-d  -lboost_context-mt-d
 
     CONFIG += separate_debug_info
 
@@ -40,13 +33,9 @@ CONFIG(debug, debug|release) {
     MOC_DIR = ../bin/release
     OBJECTS_DIR = ../bin/release
 
-    unix: LIBS += -L$$BOOST_PATH/stage/lib/ \
-                -lboost_system-mt-s -lboost_context-mt-s
-    else: win32: LIBS += -L$$BOOST_PATH/stage/lib/release/ \
-                -lboost_system-mt-s -lboost_context-mt-s
-
     *g++*: QMAKE_POST_LINK += \
-        $$QMAKE_OBJCOPY --strip-unneeded $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t)
+        $$QMAKE_OBJCOPY --strip-unneeded \
+            $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t)
 }
 
 
