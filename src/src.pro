@@ -41,10 +41,11 @@ CONFIG(debug, debug|release) {
 
 ### Compiler settings ###
 
-*g++* {
+*g++*|*clang {
     QMAKE_CXXFLAGS += \
-        -std=gnu++11 -pthread -funwind-tables \
-        -Wno-write-strings -Wno-unused-local-typedefs
+        -std=gnu++11 -std=c++1y -pthread -funwind-tables \
+        -Wno-write-strings -Wno-unused-local-typedefs \
+        -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
     win32*: LIBS += -lpthread
 }
