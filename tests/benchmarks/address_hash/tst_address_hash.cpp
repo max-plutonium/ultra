@@ -18,7 +18,7 @@ void tst_address_hash::testCase()
     std::uniform_int_distribution<int> distr;
     std::mt19937_64 generator;
 
-    std::vector<ultra::address> vec(1000000);
+    std::vector<ultra::address> vec(10000000);
     std::generate(vec.begin(), vec.end(), [&]() {
             return ultra::address {
                 distr(generator), distr(generator), distr(generator)

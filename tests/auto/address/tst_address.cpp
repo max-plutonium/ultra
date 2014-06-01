@@ -77,7 +77,7 @@ void tst_address::testCase()
     QVERIFY(addr2 != addr3); // Крайне врядли совпадут три координаты
     QVERIFY(addr1 != addr4);
     QVERIFY(addr1 != addr2);
-    QVERIFY(addr4 != addr3);
+    QVERIFY(addr3 != addr4);
 
     addr1.set_x(x);
     addr1.set_y(y);
