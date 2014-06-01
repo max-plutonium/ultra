@@ -42,4 +42,5 @@ HEADERS += \
 
 SOURCES += \
     benchmark.cpp \
-    main.cpp
+    main.cpp \
+    test_address.cpp
