@@ -43,7 +43,7 @@ CONFIG(debug, debug|release) {
 
 *g++*|*clang {
     QMAKE_CXXFLAGS += \
-        -std=gnu++11 -std=c++1y -pthread -funwind-tables \
+        -std=c++1y -pthread -funwind-tables \
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
@@ -57,7 +57,8 @@ HEADERS += \
     ultra.h \
     ultra_global.h \
     core.h \
-    address.h
+    address.h \
+    core/locks.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
