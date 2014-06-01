@@ -1,0 +1,8 @@
+
+
+GTEST_PATH = $$absolute_path($$PWD)/../gmock-1.7.0/fused-src
+INCLUDEPATH += $$GTEST_PATH
+
+SOURCES += $$GTEST_PATH/gmock-gtest-all.cc
+
+LIBS += -lrt -lgomp

@@ -43,7 +43,7 @@ CONFIG(debug, debug|release) {
 
 *g++*|*clang {
     QMAKE_CXXFLAGS += \
-        -std=gnu++11 -std=c++1y -pthread -funwind-tables \
+        -std=c++1y -pthread -funwind-tables \
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
@@ -54,18 +54,21 @@ CONFIG(debug, debug|release) {
 ### Files ###
 
 HEADERS += \
-    ultra.h \
-    ultra_global.h \
+    address.h \
     core.h \
-    address.h
+    core/concurrent_queue.h \
+    core/locks.h \
+    ultra.h \
+    ultra_global.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
 PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 
 SOURCES += \
-    ultra.cpp \
-    address.cpp
+    address.cpp \
+    core/concurrent_queue.tpp \
+    ultra.cpp
 
 
 ### Install settings ###
