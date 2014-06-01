@@ -44,4 +44,5 @@ SOURCES += \
     benchmark.cpp \
     main.cpp \
     test_address.cpp \
+    test_concurrent_queue.cpp \
     test_ordered_lock.cpp

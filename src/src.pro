@@ -54,19 +54,21 @@ CONFIG(debug, debug|release) {
 ### Files ###
 
 HEADERS += \
-    ultra.h \
-    ultra_global.h \
-    core.h \
     address.h \
-    core/locks.h
+    core.h \
+    core/concurrent_queue.h \
+    core/locks.h \
+    ultra.h \
+    ultra_global.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
 PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 
 SOURCES += \
-    ultra.cpp \
-    address.cpp
+    address.cpp \
+    core/concurrent_queue.tpp \
+    ultra.cpp
 
 
 ### Install settings ###
