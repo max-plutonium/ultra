@@ -45,17 +45,18 @@ template <typename Callable, typename... Args>
       const std::tuple<Args...> _args;
 
     template <std::size_t... Indices>
-      void call(tuple_indices<Indices...>) {
-          _task(std::get<Indices>(_args)...);
-      }
+      void call(tuple_indices<Indices...>)
+      { _task(std::get<Indices>(_args)...); }
 
   public:
       explicit function_task(Callable &&fun, Args &&...args)
-          : _task(std::forward<Callable>(fun)), _args(std::forward<Args>(args)...)
+          : _task(std::forward<Callable>(fun))
+          , _args(std::forward<Args>(args)...)
       { }
 
-      virtual void run() override {
-          call(typename tuple_indices_builder<sizeof... (Args)>::type());
+      virtual void run() final override {
+          call(typename tuple_indices_builder<
+               sizeof... (Args)>::type());
       }
 
       std::future<result_type>

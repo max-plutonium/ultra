@@ -2,6 +2,7 @@
 #define THREAD_POOL_H
 
 #include <mutex>
+#include <queue>
 #include <list>
 #include <thread>
 #include "../task.h"
@@ -9,11 +10,11 @@
 
 namespace ultra { namespace core {
 
-//template <typename Thread, typename Task, typename Queue>
 class thread_pool
 {
     std::atomic_bool _done;
     concurrent_queue<task_ptr, std::mutex> _pending_tasks;
+    static thread_local std::queue<task_ptr> _local_tasks;
     std::list<std::thread> _threads;
 
     void worker_thread()
@@ -53,22 +54,23 @@ public:
     thread_pool& operator=(const thread_pool&) = delete;
     thread_pool& operator=(thread_pool&&) = delete;
 
-    void run_async(task_ptr &&ptask)
+    void run_async(task_ptr ptask)
     {
         _pending_tasks.push(std::move(ptask));
     }
 
   template <typename Callable, typename... Args>
     std::future<typename std::result_of<Callable(Args...)>::type>
-    run_async(Callable &&f, Args &&...args)
+    run_async(Callable &&fun, Args &&...args)
     {
         using result_type = typename std::result_of<Callable(Args...)>::type;
-        using function_task_type = function_task<Callable, Args...>;
+        using task_type = function_task<Callable, Args...>;
 
-        task_ptr ptask = std::make_shared<function_task_type>(
-                    std::forward<Callable>(f), std::forward<Args>(args)...);
+        task_ptr ptask = std::make_shared<task_type>(
+                std::forward<Callable>(fun), std::forward<Args>(args)...);
         std::future<result_type> ret
-                = std::static_pointer_cast<function_task_type>(ptask)->get_future();
+                = std::static_pointer_cast<task_type>(ptask)->get_future();
+
         run_async(std::move(ptask));
         return ret;
     }
