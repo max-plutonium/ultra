@@ -9,8 +9,14 @@ namespace detail {
 benchmark_cpuclock_timer::benchmark_cpuclock_timer()
     : start_time(0)
 {
+#ifdef __unix__
     if(clock_getcpuclockid(getpid(), &clockid) != 0)
         perror("benchmark_cpuclock_timer: clock_getcpuclockid");
+#elif defined __MINGW32__
+    clockid = CLOCK_THREAD_CPUTIME_ID;
+#else
+#   error "platform not supported"
+#endif
 }
 
 void benchmark_cpuclock_timer::start()
