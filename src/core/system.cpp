@@ -8,6 +8,7 @@
 #include <cstring>  // memset
 #include <cassert>
 #include <algorithm> // std::min, std::max
+#include <csetjmp>
 
 #ifdef __unix__
 #   include <unistd.h>          // sysconf
@@ -21,6 +22,33 @@
 
 #endif
 
+extern "C" void fini_context();
+extern "C" void __attribute__((nothrow, noreturn))
+init_context(void *sp, void *ip, void *arg)
+{
+#ifdef __MINGW32__
+    asm volatile(
+        "movl %0, %%esp \n"
+        "movl %%esp, %%ebp \n"
+        "pushl %1 \n"
+        "pushl %2 \n"
+        "pushl %3 \n"
+        "retl \n"
+        :: "r"(sp), "r"(arg)
+        , "r"(&fini_context), "r"(ip)
+        : "%esp");
+#else
+#   error "platform not supported"
+#endif
+
+    __builtin_unreachable();
+}
+
+extern "C" void __attribute__((nothrow))
+fini_context()
+{
+
+}
 
 namespace ultra { namespace core {
 
@@ -57,6 +85,75 @@ std::size_t system::get_pagesize()
 std::size_t system::get_pagecount(std::size_t memsize)
 {
     return static_cast<std::size_t>(std::ceil(memsize / get_pagesize()));
+}
+
+struct machine_context_sjlj : system::machine_context
+{
+    static thread_local void *_data;
+    void __attribute__((nothrow, noreturn)) resume_context();
+    bool __attribute__((nothrow)) pause_context();
+
+    machine_context_sjlj(void *sp, void *ip)
+        : _sp(sp), _ip(ip) { }
+
+private:
+    void *_sp;
+    void *_ip;
+    jmp_buf _jump_context;
+    bool _started = false;
+};
+
+/*static*/ thread_local
+void *machine_context_sjlj::_data = 0;
+
+void machine_context_sjlj::resume_context()
+{
+    if(__builtin_expect(_started, true)) {
+        longjmp(_jump_context, 1);
+    } else {
+        _started = true;
+        init_context(_sp, _ip, _data);
+    }
+    __builtin_unreachable();
+}
+
+bool machine_context_sjlj::pause_context()
+{
+    if(__builtin_expect(!_started, false))
+        _started = true;
+    return 1 == setjmp(_jump_context);
+}
+
+/*static*/
+system::machine_context_ptr
+system::make_context(stack &astack, void (*func)(void *))
+{
+    return std::make_shared<machine_context_sjlj>(
+                astack.second, reinterpret_cast<void *>(func));
+}
+
+/*static*/
+void *system::switch_context(system::machine_context_ptr &from,
+                             const system::machine_context_ptr &to, void *data)
+{
+    if(!from)
+        from = std::make_shared<machine_context_sjlj>(nullptr, nullptr);
+
+    machine_context_sjlj *from_ctx
+            = dynamic_cast<machine_context_sjlj*>(from.get());
+    machine_context_sjlj *to_ctx
+            = dynamic_cast<machine_context_sjlj*>(to.get());
+    assert(from_ctx && to_ctx);
+
+    if(!from_ctx->pause_context()) {
+        machine_context_sjlj::_data = data;
+        to_ctx->resume_context();
+        __builtin_unreachable();
+    }
+
+    data = machine_context_sjlj::_data;
+    machine_context_sjlj::_data = 0;
+    return data;
 }
 
 #ifdef __unix__
