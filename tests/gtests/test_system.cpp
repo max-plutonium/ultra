@@ -6,7 +6,6 @@ using namespace ultra::core;
 struct test_system : public testing::Test
 {
     system::machine_context_ptr this_ctx, child_ctx;
-
 };
 
 TEST_F(test_system, stack_allocation)

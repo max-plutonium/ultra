@@ -19,9 +19,15 @@ public:
 
     using stack = std::pair<std::size_t, void *>;
     using machine_context_ptr = std::shared_ptr<machine_context>;
-    static machine_context_ptr make_context(stack &astack, void (*func)(void *));
+
+    static bool save_context(machine_context_ptr &ctx);
+    static void __attribute__((nothrow, noreturn))
+    restore_context(const machine_context_ptr &ctx);
+
+    static machine_context_ptr make_context(
+            const stack &astack, std::function<void (void *)> func);
     static void *switch_context(machine_context_ptr &from,
-                                const machine_context_ptr &to, void *data);
+            const machine_context_ptr &to, void *data = nullptr);
 
     static bool is_stack_unbound();
     static std::size_t default_stacksize();

@@ -22,35 +22,32 @@
 
 #endif
 
-extern "C" void fini_context();
-extern "C" void __attribute__((nothrow, noreturn))
-init_context(void *sp, void *ip, void *arg)
-{
-#ifdef __MINGW32__
-    asm volatile(
-        "movl %0, %%esp \n"
-        "movl %%esp, %%ebp \n"
-        "pushl %1 \n"
-        "pushl %2 \n"
-        "pushl %3 \n"
-        "retl \n"
-        :: "r"(sp), "r"(arg)
-        , "r"(&fini_context), "r"(ip)
-        : "%esp");
-#else
-#   error "platform not supported"
-#endif
 
-    __builtin_unreachable();
+static thread_local
+ultra::core::system::machine_context_ptr t_cloned_context, t_cloning_context;
+
+extern "C" void ultra_context(void *arg)
+{
+    using namespace ultra::core;
+    std::function<void (void *)> func
+            = *reinterpret_cast<std::function<void (void *)>*>(arg);
+    func(system::switch_context(t_cloning_context, t_cloned_context));
 }
 
-extern "C" void __attribute__((nothrow))
-fini_context()
+extern "C" void fini_context()
 {
-
 }
 
 namespace ultra { namespace core {
+
+struct machine_context_sjlj : system::machine_context
+{
+    static thread_local void *_data;
+    jmp_buf _cxt;
+};
+
+/*static*/ thread_local
+void *machine_context_sjlj::_data = nullptr;
 
 #ifdef __windows__
 static SYSTEM_INFO get_system_info_helper()
@@ -87,67 +84,63 @@ std::size_t system::get_pagecount(std::size_t memsize)
     return static_cast<std::size_t>(std::ceil(memsize / get_pagesize()));
 }
 
-struct machine_context_sjlj : system::machine_context
+/*static*/
+bool system::save_context(machine_context_ptr &ctx)
 {
-    static thread_local void *_data;
-    void __attribute__((nothrow, noreturn)) resume_context();
-    bool __attribute__((nothrow)) pause_context();
+    if(!ctx)
+        ctx = std::make_shared<machine_context_sjlj>();
 
-    machine_context_sjlj(void *sp, void *ip)
-        : _sp(sp), _ip(ip) { }
+    auto *pctx = dynamic_cast<machine_context_sjlj*>(ctx.get());
+    assert(pctx);
 
-private:
-    void *_sp;
-    void *_ip;
-    jmp_buf _jump_context;
-    bool _started = false;
-};
-
-/*static*/ thread_local
-void *machine_context_sjlj::_data = 0;
-
-void machine_context_sjlj::resume_context()
-{
-    if(__builtin_expect(_started, true)) {
-        longjmp(_jump_context, 1);
-    } else {
-        _started = true;
-        init_context(_sp, _ip, _data);
-    }
-    __builtin_unreachable();
+    return 0 == setjmp(pctx->_cxt);
 }
 
-bool machine_context_sjlj::pause_context()
+/*static*/
+void system::restore_context(const system::machine_context_ptr &ctx)
 {
-    if(__builtin_expect(!_started, false))
-        _started = true;
-    return 1 == setjmp(_jump_context);
+    auto *pctx = dynamic_cast<machine_context_sjlj*>(ctx.get());
+    assert(pctx);
+
+    longjmp(pctx->_cxt, 1);
+    __builtin_unreachable();
 }
 
 /*static*/
 system::machine_context_ptr
-system::make_context(stack &astack, void (*func)(void *))
+system::make_context(const stack &astack, std::function<void (void *)> func)
 {
-    return std::make_shared<machine_context_sjlj>(
-                astack.second, reinterpret_cast<void *>(func));
+    t_cloned_context = std::make_shared<machine_context_sjlj>();
+    if(setjmp(static_cast<machine_context_sjlj*>(t_cloned_context.get())->_cxt)) {
+        t_cloned_context.reset();
+        return std::move(t_cloning_context);
+    }
+
+#ifdef __MINGW32__
+    asm volatile(
+        "movl %0, %%esp \n"
+        "movl %%esp, %%ebp \n"
+        "subl $0xc, %%esp \n"
+        "movl %1, 0x8(%%esp) \n"
+        "movl $2, 0x4(%%esp) \n"
+        "movl %3, (%%esp) \n"
+        "retl \n"
+        :: "r"(astack.second), "r"(reinterpret_cast<void *>(&func))
+        , "r"(&fini_context), "r"(&ultra_context)
+        : "%esp");
+#else
+#   error "platform not supported"
+#endif
+    __builtin_unreachable();
 }
 
 /*static*/
 void *system::switch_context(system::machine_context_ptr &from,
                              const system::machine_context_ptr &to, void *data)
 {
-    if(!from)
-        from = std::make_shared<machine_context_sjlj>(nullptr, nullptr);
-
-    machine_context_sjlj *from_ctx
-            = dynamic_cast<machine_context_sjlj*>(from.get());
-    machine_context_sjlj *to_ctx
-            = dynamic_cast<machine_context_sjlj*>(to.get());
-    assert(from_ctx && to_ctx);
-
-    if(!from_ctx->pause_context()) {
+    if(save_context(from)) {
         machine_context_sjlj::_data = data;
-        to_ctx->resume_context();
+        restore_context(to);
         __builtin_unreachable();
     }
 
