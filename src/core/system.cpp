@@ -22,21 +22,27 @@
 
 #endif
 
+namespace ultra { namespace core {
 
-static thread_local
-ultra::core::system::machine_context_ptr t_cloned_context, t_cloning_context;
+struct context_info
+{
+    system::machine_context_ptr _cloned_context, _cloning_context;
+    std::function<void (void *)> &_func;
+};
+
+} // namespace core
+
+} // namespace ultra
 
 extern "C" void ultra_context(void *arg)
 {
     using namespace ultra::core;
-    std::function<void (void *)> func
-            = *reinterpret_cast<std::function<void (void *)>*>(arg);
-    func(system::switch_context(t_cloning_context, t_cloned_context));
+    context_info &ci = *reinterpret_cast<context_info*>(arg);
+    std::function<void (void *)> func { ci._func };
+    func(system::switch_context(ci._cloning_context, ci._cloned_context));
 }
 
-extern "C" void fini_context()
-{
-}
+extern "C" void fini_context() { }
 
 namespace ultra { namespace core {
 
@@ -110,10 +116,11 @@ void system::restore_context(const system::machine_context_ptr &ctx)
 system::machine_context_ptr
 system::make_context(const stack &astack, std::function<void (void *)> func)
 {
-    t_cloned_context = std::make_shared<machine_context_sjlj>();
-    if(setjmp(static_cast<machine_context_sjlj*>(t_cloned_context.get())->_cxt)) {
-        t_cloned_context.reset();
-        return std::move(t_cloning_context);
+    context_info ci { nullptr, nullptr, func };
+    ci._cloned_context = std::make_shared<machine_context_sjlj>();
+    if(setjmp(static_cast<machine_context_sjlj*>(ci._cloned_context.get())->_cxt)) {
+        ci._cloned_context.reset();
+        return std::move(ci._cloning_context);
     }
 
 #ifdef __MINGW32__
@@ -125,7 +132,7 @@ system::make_context(const stack &astack, std::function<void (void *)> func)
         "movl $2, 0x4(%%esp) \n"
         "movl %3, (%%esp) \n"
         "retl \n"
-        :: "r"(astack.second), "r"(reinterpret_cast<void *>(&func))
+        :: "r"(astack.second), "r"(reinterpret_cast<void *>(&ci))
         , "r"(&fini_context), "r"(&ultra_context)
         : "%esp");
 #else
