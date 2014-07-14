@@ -37,7 +37,7 @@ struct context_info
 extern "C" void ultra_context(void *arg)
 {
     using namespace ultra::core;
-    context_info &ci = *reinterpret_cast<context_info*>(arg);
+    context_info &ci = *reinterpret_cast<context_info *>(arg);
     std::function<void (void *)> func { ci._func };
     func(system::switch_context(ci._cloning_context, ci._cloned_context));
 }
@@ -96,7 +96,7 @@ bool system::save_context(machine_context_ptr &ctx)
     if(!ctx)
         ctx = std::make_shared<machine_context_sjlj>();
 
-    auto *pctx = dynamic_cast<machine_context_sjlj*>(ctx.get());
+    auto *pctx = dynamic_cast<machine_context_sjlj *>(ctx.get());
     assert(pctx);
 
     return 0 == setjmp(pctx->_cxt);
@@ -105,7 +105,7 @@ bool system::save_context(machine_context_ptr &ctx)
 /*static*/
 void system::restore_context(const system::machine_context_ptr &ctx)
 {
-    auto *pctx = dynamic_cast<machine_context_sjlj*>(ctx.get());
+    auto *pctx = dynamic_cast<machine_context_sjlj *>(ctx.get());
     assert(pctx);
 
     longjmp(pctx->_cxt, 1);
@@ -118,7 +118,7 @@ system::make_context(const stack &astack, std::function<void (void *)> func)
 {
     context_info ci { nullptr, nullptr, func };
     ci._cloned_context = std::make_shared<machine_context_sjlj>();
-    if(setjmp(static_cast<machine_context_sjlj*>(ci._cloned_context.get())->_cxt)) {
+    if(setjmp(static_cast<machine_context_sjlj *>(ci._cloned_context.get())->_cxt)) {
         ci._cloned_context.reset();
         return std::move(ci._cloning_context);
     }
@@ -129,11 +129,11 @@ system::make_context(const stack &astack, std::function<void (void *)> func)
         "movl %%esp, %%ebp \n"
         "subl $0xc, %%esp \n"
         "movl %1, 0x8(%%esp) \n"
-        "movl $2, 0x4(%%esp) \n"
+        "movl %2, 0x4(%%esp) \n"
         "movl %3, (%%esp) \n"
         "retl \n"
-        :: "r"(astack.second), "r"(reinterpret_cast<void *>(&ci))
-        , "r"(&fini_context), "r"(&ultra_context)
+        :: "rm"(astack.second), "rm"(reinterpret_cast<void *>(&ci))
+        , "rm"(&fini_context), "rm"(&ultra_context)
         : "%esp");
 #else
 #   error "platform not supported"
@@ -152,7 +152,7 @@ void *system::switch_context(system::machine_context_ptr &from,
     }
 
     data = machine_context_sjlj::_data;
-    machine_context_sjlj::_data = 0;
+    machine_context_sjlj::_data = nullptr;
     return data;
 }
 
@@ -218,7 +218,7 @@ std::size_t system::default_stacksize()
 /*static*/
 std::size_t system::minimum_stacksize()
 {
-    return MINSIGSTKSZ + 16;
+    return MINSIGSTKSZ;
 }
 
 /*static*/
@@ -275,7 +275,7 @@ system::stack system::allocate_stack(std::size_t stack_size)
 
 #endif
 
-    return { result_size, static_cast<char*>(ptr) + result_size };
+    return { result_size, static_cast<char *>(ptr) + result_size };
 }
 
 /*static*/
@@ -285,7 +285,7 @@ void system::deallocate_stack(stack &astack)
     assert(minimum_stacksize() <= astack.first);
     assert(is_stack_unbound() || (maximum_stacksize() >= astack.first));
 
-    void *ptr = static_cast<char*>(astack.second) - astack.first;
+    void *ptr = static_cast<char *>(astack.second) - astack.first;
 
 #ifdef __unix__
     // POSIX.4 (POSIX.1b-1993, _POSIX_C_SOURCE=199309L)
