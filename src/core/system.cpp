@@ -20,17 +20,17 @@
 #   if defined __x86_64__
 #       define context_trampoline(stackptr, argptr, retptr, funptr) \
             asm volatile( \
-                "mov %0, %%rsp \n" \
-                "mov %%rsp, %%rbp \n" \
-                "sub $0x10, %%rsp \n" \
-                "mov %1, %%rdi \n" \
-                "mov %2, 0x8(%%rsp) \n" \
-                "mov %3, (%%rsp) \n" \
-                "ret \n" \
-                :: "rm"(reinterpret_cast<void *>(stackptr)) \
-                , "rm"(reinterpret_cast<void *>(argptr)) \
-                , "rm"(reinterpret_cast<void *>(retptr)) \
-                , "rm"(reinterpret_cast<void *>(funptr)) \
+                "movq %0, %%rsp \n" \
+                "movq %%rsp, %%rbp \n" \
+                "subq $0x10, %%rsp \n" \
+                "movq %1, %%rdi \n" \
+                "movq %2, 0x8(%%rsp) \n" \
+                "movq %3, (%%rsp) \n" \
+                "retq \n" \
+                :: "r"(reinterpret_cast<void *>(stackptr)) \
+                , "r"(reinterpret_cast<void *>(argptr)) \
+                , "r"(reinterpret_cast<void *>(retptr)) \
+                , "r"(reinterpret_cast<void *>(funptr)) \
                 : "%rsp", "%rdi");
 #   endif
 
