@@ -8,12 +8,13 @@
 TEMPLATE = app
 QT =
 TARGET = ultra-gtests
-CONFIG += console c++11
+CONFIG += console
 CONFIG -= app_bundle
 QMAKE_CXXFLAGS += -std=gnu++1y
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_gtest)
+load(ultra_jit)
 
 BUILDROOT = ../../bin
 
@@ -45,4 +46,5 @@ SOURCES += \
     main.cpp \
     test_address.cpp \
     test_concurrent_queue.cpp \
-    test_ordered_lock.cpp
+    test_ordered_lock.cpp \
+    test_libjit.cpp
