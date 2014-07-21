@@ -1,14 +1,14 @@
 #include "../../src/core/thread_pool.h"
 #include <gmock/gmock.h>
 #include <chrono>
+#include <queue>
 
 class mock_task : public ultra::task
 {
 public:
+    explicit mock_task(int prio = 0) : ultra::task(prio) { }
     MOCK_METHOD0(run, void());
 };
-
-using testing::Mock;
 
 TEST(test_thread_pool, run_async_simple)
 {
@@ -20,7 +20,6 @@ TEST(test_thread_pool, run_async_simple)
 
     core::thread_pool pool;
     pool.run_async(std::move(ptask));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
 
 std::string fff(std::string &r) {

@@ -27,15 +27,30 @@ class task : public std::enable_shared_from_this<task>
 {
 protected:
     std::atomic<task_state> _state;
+    int _prio;
 
 public:
-    task();
+    explicit task(int prio = 0);
     virtual ~task() = default;
     virtual void run() = 0;
+
+    friend struct task_prio_less;
+    friend struct task_prio_greather;
 };
 
-//template <typename Deleter = std::default_delete<task>>
-using task_ptr = std::shared_ptr<task/*, Deleter*/>;
+using task_ptr = std::shared_ptr<task>;
+
+struct task_prio_less : std::binary_function<task_ptr, task_ptr, bool>
+{
+    bool operator()(const ultra::task_ptr &lhs, const ultra::task_ptr &rhs) const
+    { return lhs->_prio < rhs->_prio; }
+};
+
+struct task_prio_greather : std::binary_function<task_ptr, task_ptr, bool>
+{
+    bool operator()(const ultra::task_ptr &lhs, const ultra::task_ptr &rhs) const
+    { return lhs->_prio > rhs->_prio; }
+};
 
 template <typename Callable, typename... Args>
   class function_task : public task
@@ -55,8 +70,7 @@ template <typename Callable, typename... Args>
       { }
 
       virtual void run() final override {
-          call(typename tuple_indices_builder<
-               sizeof... (Args)>::type());
+          call(typename tuple_indices_builder<sizeof... (Args)>::type());
       }
 
       std::future<result_type>
