@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <jit/jit.h>
+#include <jit/jit-dump.h>
 
 #include "benchmark.h"
 
@@ -85,10 +86,18 @@ TEST(test_libjit, gcd)
     jit_context_t context = jit_context_create();
     jit_function_t gcd = build_gcd_func(context);
 
+    // This will dump the uncompiled function, showing libjit opcodes
+    jit_dump_function(stdout, gcd, "gcd [uncompiled]");
+
+    printf("Optimization level: %u\n", jit_function_get_optimization_level(gcd));
+
     // Compile (JIT) the function to machine code
     jit_context_build_start(context);
     jit_function_compile(gcd);
     jit_context_build_end(context);
+
+    // This will dump the disassembly of the machine code for the function
+    jit_dump_function(stdout, gcd, "gcd [compiled]");
 
     // Run the function on argv input
     int u = 257458;
@@ -112,6 +121,127 @@ TEST(test_libjit, gcd)
     //    benchmark("test_libjit: 1000000 direct calls", 1000000) {
     //        result = gcd_f(u, v);
     //    }
+
+    jit_context_destroy(context);
+}
+
+// Builds this function, and returns an uncompiled jit_function_t:
+//
+// int jit_adder(int x, y) {
+//    return x + y;
+// }
+static jit_function_t build_jit_adder(jit_context_t context)
+{
+    jit_context_build_start(context);
+
+    // Create function signature and object. int (*)(int, int)
+    jit_type_t params[2] = {jit_type_int, jit_type_int};
+    jit_type_t signature = jit_type_create_signature(
+                               jit_abi_cdecl, jit_type_int, params, 2, 1);
+    jit_function_t F = jit_function_create(context, signature);
+
+    // x, y are the parameters; sum is a temporary
+    jit_value_t x = jit_value_get_param(F, 0);
+    jit_value_t y = jit_value_get_param(F, 1);
+    jit_value_t sum = jit_value_create(F, jit_type_int);
+
+    // sum = x + y
+    jit_value_t temp_sum = jit_insn_add(F, x, y);
+    jit_insn_store(F, sum, temp_sum);
+
+    // return sum
+    jit_insn_return(F, sum);
+    jit_context_build_end(context);
+    return F;
+}
+
+static int native_mult(int a, int b)
+{
+    return a * b;
+}
+
+static jit_function_t build_native_caller(jit_context_t context)
+{
+    jit_context_build_start(context);
+
+    jit_type_t params[] = {jit_type_int, jit_type_int};
+    jit_type_t signature = jit_type_create_signature(
+                               jit_abi_cdecl, jit_type_int, params, 2, 1);
+    jit_function_t F = jit_function_create(context, signature);
+
+    jit_value_t x = jit_value_get_param(F, 0);
+    jit_value_t y = jit_value_get_param(F, 1);
+
+    jit_type_t mult_params[] = {jit_type_int, jit_type_int};
+    jit_type_t mult_signature = jit_type_create_signature(
+                        jit_abi_cdecl, jit_type_int, mult_params, 2, 1);
+
+    jit_value_t mult_args[] = {x, y};
+    jit_value_t res = jit_insn_call_native(
+                  F, "native_mult", (void *) native_mult, mult_signature,
+                  mult_args, sizeof(mult_args) / sizeof(jit_value_t),
+                  JIT_CALL_NOTHROW);
+
+    jit_insn_return(F, res);
+    jit_context_build_end(context);
+    return F;
+}
+
+static jit_function_t build_interp_caller(
+        jit_context_t context, jit_function_t interp_fun)
+{
+    jit_context_build_start(context);
+
+    jit_type_t params[] = {jit_type_int, jit_type_int};
+    jit_type_t signature = jit_type_create_signature(
+                               jit_abi_cdecl, jit_type_int, params, 2, 1);
+    jit_function_t F = jit_function_create(context, signature);
+
+    jit_value_t x = jit_value_get_param(F, 0);
+    jit_value_t y = jit_value_get_param(F, 1);
+
+    jit_value_t adder_args[] = {x, y};
+    jit_value_t res = jit_insn_call(F, "interp_function",
+                            interp_fun, 0, adder_args, 2, 0);
+
+    jit_insn_return(F, res);
+    jit_context_build_end(context);
+    return F;
+}
+
+TEST(test_libjit, invokations)
+{
+    jit_init();
+    jit_context_t context = jit_context_create();
+    jit_function_t jit_adder = build_jit_adder(context);
+    jit_function_t native_caller = build_native_caller(context);
+    jit_function_t interp_caller = build_interp_caller(context, jit_adder);
+
+    // This will dump the uncompiled function, showing libjit opcodes
+    jit_dump_function(stdout, jit_adder, "jit_adder [uncompiled]");
+    jit_dump_function(stdout, native_caller, "native_caller [uncompiled]");
+    jit_dump_function(stdout, interp_caller, "interp_caller [uncompiled]");
+
+    // Compile (JIT) the functions to machine code
+    jit_context_build_start(context);
+    jit_function_compile(jit_adder);
+    jit_function_compile(native_caller);
+    jit_function_compile(interp_caller);
+    jit_context_build_end(context);
+
+    // This will dump the disassembly of the machine code for the function
+    jit_dump_function(stdout, jit_adder, "jit_adder [compiled]");
+    jit_dump_function(stdout, native_caller, "native_caller [compiled]");
+    jit_dump_function(stdout, interp_caller, "interp_caller [compiled]");
+
+    // Run the function on argv input
+    int u = 2;
+    int v = 3;
+    void *args[] = {&u, &v};
+    int res = 0;
+    jit_function_apply(jit_adder, args, &res);
+    jit_function_apply(native_caller, args, &res);
+    jit_function_apply(interp_caller, args, &res);
 
     jit_context_destroy(context);
 }
