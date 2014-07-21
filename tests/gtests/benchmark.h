@@ -1,6 +1,8 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+#include <cstdint>
+
 namespace detail {
 
 #include <stdlib.h>
@@ -32,13 +34,13 @@ public:
 class benchmark_controller
 {
     const char *name;
-    unsigned iteration;
-    const unsigned iterations;
+    std::uint64_t iteration;
+    const std::uint64_t iterations;
     benchmark_cpuclock_timer cpu_timer;
     benchmark_omp_timer omp_timer;
 
 public:
-    benchmark_controller(const char *aname, unsigned aiterations);
+    benchmark_controller(const char *aname, std::uint64_t aiterations);
     ~benchmark_controller();
     bool is_done();
 };

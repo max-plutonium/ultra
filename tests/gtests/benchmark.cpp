@@ -54,13 +54,13 @@ double benchmark_omp_timer::elapsed()
 
 
 benchmark_controller::benchmark_controller(
-        const char *aname, unsigned aiterations)
+        const char *aname, std::uint64_t aiterations)
     : name(aname), iteration(0), iterations(aiterations)
 {
 
     fprintf(stderr,
             "\n************************************\n"
-            "start  benchmark \"%s\" for %u iterations\n",
+            "start  benchmark \"%s\" for %lu iterations\n",
             name, iterations);
     omp_timer.start();
     cpu_timer.start();
@@ -71,7 +71,7 @@ benchmark_controller::~benchmark_controller()
     const auto omp_elapsed = omp_timer.elapsed();
     const auto cpu_elapsed = cpu_timer.elapsed();
     fprintf(stderr,
-        "finish benchmark \"%s\" for %u iterations\n"
+        "finish benchmark \"%s\" for %lu iterations\n"
         "cpu  time %0.9f (%0.9f per iteration)\n"
         "full time %0.9f (%0.9f per iteration)\n"
         "*************************************\n",
@@ -82,7 +82,7 @@ benchmark_controller::~benchmark_controller()
 
 bool benchmark_controller::is_done()
 {
-    return (++iteration) == iterations;
+    return (iteration++) == iterations;
 }
 
 } // namespace detail
