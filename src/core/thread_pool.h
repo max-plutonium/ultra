@@ -3,32 +3,34 @@
 
 #include "../task.h"
 #include <mutex>
-#include <queue>
+#include "concurrent_queue.h"
 #include <list>
+#include <unordered_set>
 
 namespace ultra { namespace core {
 
 class thread_pool
 {
     mutable std::mutex _mutex;
-    using task_queue = std::priority_queue<
-        task_ptr, std::vector<task_ptr>, task_prio_less>;
-    std::priority_queue<task_ptr, std::vector<task_ptr>, task_prio_less> _async_tasks;
-    static thread_local std::unique_ptr<task_queue> _deferred_tasks;
+    using task_queue = concurrent_queue<task_ptr, std::mutex>;
+    task_queue _async_tasks;
 
-    std::atomic_size_t _nr_max_threads;
-    std::atomic_size_t _nr_threads;
-    std::atomic_size_t _nr_reserved;
+    std::size_t _nr_max_threads;
+    std::size_t _nr_reserved;
     std::atomic_bool _exiting;
-    int _expiry_timeout;
+    std::chrono::milliseconds _expiry_timeout;
 
+    class worker;
     mutable std::mutex _lock;
-    std::list<std::thread> _threads;
+    using worker_ptr = std::shared_ptr<worker>;
+    std::list<worker_ptr> _active_threads;
+    std::unordered_set<worker *> _waiters;
+    std::list<worker_ptr> _expired_threads;
     std::condition_variable _no_active_threads;
 
-    void async_schedule(task_ptr &);
     std::size_t _active_thread_count() const;
     bool _too_many_active_threads() const;
+    void _start_more();
 
 public:
     thread_pool();
@@ -39,8 +41,8 @@ public:
     thread_pool& operator=(thread_pool&&) = delete;
     static thread_pool *instance();
 
-    int get_expiry_timeout() const;
-    void set_expiry_timeout(int timeout);
+    std::chrono::milliseconds get_expiry_timeout() const;
+    void set_expiry_timeout(std::chrono::milliseconds timeout);
 
     int get_max_thread_count() const;
     void set_max_thread_count(int count);

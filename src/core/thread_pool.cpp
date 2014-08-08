@@ -1,4 +1,5 @@
 #include "thread_pool.h"
+#include <thread>
 #include <algorithm>
 #include <cassert>
 
@@ -7,12 +8,99 @@ namespace ultra { namespace core {
 /************************************************************************************
     thread_pool
  ***********************************************************************************/
-/*static*/ thread_local
-std::unique_ptr<thread_pool::task_queue> thread_pool::_deferred_tasks = nullptr;
+
+class thread_pool::worker : public std::enable_shared_from_this<worker>
+{
+    thread_pool *_pool;
+    task_ptr _task;
+    std::thread _thread;
+    std::list<thread_pool::worker_ptr>::iterator _id;
+    std::condition_variable _cond;
+
+    bool _wait_pred() {
+        if(_pool->_async_tasks.pop(_task)) {
+            if(running != _status) {
+                _pool->_waiters.erase(this);
+                _status = running;
+            }
+
+            return true;
+        }
+
+        if(wait != _status) {
+            _pool->_waiters.insert(this);
+            _status = wait;
+        }
+
+        return false;
+    }
+
+    void _expire_thread() {
+        _status = expired;
+        _pool->_active_threads.erase(_id);
+        _pool->_expired_threads.push_back(shared_from_this());
+        _id = --_pool->_expired_threads.end();
+        _cond.notify_all();
+    }
+
+public:
+    enum status {
+        stop, expired, running, wait
+    } _status;
+
+    explicit worker(thread_pool *pool)
+        : _pool(pool), _status(stop) { }
+
+    ~worker() {
+        if(_thread.joinable())
+            _thread.join();
+    }
+
+    void join() { _thread.join(); }
+    void wake_up() { _cond.notify_one(); }
+    void wait_for_done(std::unique_lock<std::mutex> &lk) { _cond.wait(lk); }
+
+    void start(task_ptr ptask, std::list<thread_pool::worker_ptr>::iterator id) {
+        _task = std::move(ptask);
+        _id = id;
+        _thread = std::thread(std::bind(&worker::run, shared_from_this()));
+    }
+
+    void run() {
+        do {
+            if(__builtin_expect(!_task, true)) {
+                if(!_pool->_async_tasks.pop(_task)) {
+                    std::unique_lock<std::mutex> lk { _pool->_lock };
+                    while(!_pool->_exiting.load(std::memory_order_acquire)
+                          && !_wait_pred()) {
+                        if(std::cv_status::timeout
+                           == _cond.wait_for(lk, _pool->_expiry_timeout)) {
+                            _expire_thread();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if(_task) {
+                _status = running;
+                task_ptr t = std::move(_task);
+                try {
+                    t->run();
+                } catch(...) {
+                    // TODO
+                }
+            }
+
+        } while(!_pool->_exiting.load(std::memory_order_relaxed));
+
+        std::unique_lock<std::mutex> lk { _pool->_lock };
+        _expire_thread();
+    }
+};
 
 thread_pool::thread_pool()
     : _nr_max_threads(std::thread::hardware_concurrency())
-    , _nr_threads(0)
     , _nr_reserved(0)
     , _exiting(false)
     , _expiry_timeout(30000)
@@ -21,7 +109,6 @@ thread_pool::thread_pool()
 
 thread_pool::~thread_pool()
 {
-    _exiting.store(true, std::memory_order_release);
     wait_for_done();
 }
 
@@ -32,48 +119,9 @@ thread_pool *thread_pool::instance()
     return &s_pool;
 }
 
-void thread_pool::async_schedule(task_ptr &ptask)
-{
-    _deferred_tasks.reset(new task_queue);
-    std::size_t yield_count = 10;
-    while(!_exiting.load(std::memory_order_relaxed)) {
-        if(!ptask) {
-            if(_deferred_tasks && !_deferred_tasks->empty()) {
-                ptask = std::move(_deferred_tasks->top());
-                _deferred_tasks->pop();
-            }
-        }
-
-        if(!ptask) {
-            std::lock_guard<std::mutex> locker { _mutex };
-            if(!_async_tasks.empty()) {
-                ptask = std::move(_async_tasks.top());
-                _async_tasks.pop();
-            }
-        }
-
-        if(ptask) {
-            yield_count = 10;
-            task_ptr t = std::move(ptask);
-            try {
-                t->run();
-            } catch(...) {
-                // TODO
-            }
-        } else {
-            if(--yield_count)
-                std::this_thread::yield();
-            else
-                break;
-        }
-    }
-
-    --_nr_threads;
-}
-
 std::size_t thread_pool::_active_thread_count() const
 {
-    return _nr_threads;
+    return _active_threads.size() + _nr_reserved;
 }
 
 bool thread_pool::_too_many_active_threads() const
@@ -82,60 +130,108 @@ bool thread_pool::_too_many_active_threads() const
     return count > _nr_max_threads && (count - _nr_reserved) > 1;
 }
 
-int thread_pool::get_expiry_timeout() const
+void thread_pool::_start_more()
 {
+    while(_active_thread_count() < _nr_max_threads) {
+        task_ptr ptask;
+        if(!_async_tasks.pop(ptask))
+            break;
+        _active_threads.push_back(std::make_shared<worker>(this));
+        _active_threads.back()->start(std::move(ptask), --_active_threads.end());
+    }
+}
+
+std::chrono::milliseconds thread_pool::get_expiry_timeout() const
+{
+    std::lock_guard<std::mutex> lk { _lock };
     return _expiry_timeout;
 }
 
-void thread_pool::set_expiry_timeout(int timeout)
+void thread_pool::set_expiry_timeout(std::chrono::milliseconds timeout)
 {
+    std::lock_guard<std::mutex> lk { _lock };
     _expiry_timeout = timeout;
 }
 
 int thread_pool::get_max_thread_count() const
 {
+    std::lock_guard<std::mutex> lk { _lock };
     return _nr_max_threads;
 }
 
 void thread_pool::set_max_thread_count(int count)
 {
+    std::lock_guard<std::mutex> lk { _lock };
     _nr_max_threads = count;
+    _start_more();
 }
 
 int thread_pool::get_thread_count() const
 {
+    std::lock_guard<std::mutex> lk { _lock };
     return _active_thread_count();
 }
 
 void thread_pool::reserve_thread()
 {
+    std::lock_guard<std::mutex> lk { _lock };
     ++_nr_reserved;
 }
 
 void thread_pool::release_thread()
 {
+    std::lock_guard<std::mutex> lk { _lock };
     --_nr_reserved;
+    _start_more();
 }
 
 void thread_pool::wait_for_done()
 {
-    for(std::thread &t : _threads)
-        t.join();
+    _exiting.store(true, std::memory_order_release);
+    std::unique_lock<std::mutex> lk { _lock };
+    while(_active_threads.size()) {
+        worker_ptr t = _active_threads.front();
+        while(worker::expired < t->_status) {
+            if(worker::wait == t->_status)
+                t->wake_up();
+            t->wait_for_done(lk);
+        }
+        lk.unlock();
+        t->join();
+        assert(2 == t.use_count());
+        lk.lock();
+    }
+
+    _waiters.clear();
+    _expired_threads.clear();
+
+    _exiting.store(false, std::memory_order_release);
 }
 
 void thread_pool::schedule(std::launch policy, task_ptr ptask)
 {
-    const bool pooled_thread = static_cast<bool>(_deferred_tasks);
-    if(pooled_thread && std::launch::deferred == policy) {
-        _deferred_tasks->push(std::move(ptask));
+    (void) policy;
+    {
+        std::lock_guard<std::mutex> lk { _lock };
+        if(!_waiters.empty()) {
+            (*_waiters.begin())->wake_up();
+            _async_tasks.push(std::move(ptask));
+            return;
+        }
+        else if(!_expired_threads.empty()) {
+            _active_threads.push_back(*_expired_threads.begin());
+            _expired_threads.pop_front();
+            _active_threads.back()->start(std::move(ptask), --_active_threads.end());
+        }
+        else if(_active_thread_count() < _nr_max_threads) {
+            _active_threads.push_back(std::make_shared<worker>(this));
+            _active_threads.back()->start(std::move(ptask), --_active_threads.end());
+            return;
+        }
     }
-    else if(!pooled_thread && (_active_thread_count() < _nr_max_threads)) {
-        ++_nr_threads;
-        std::lock_guard<decltype(_lock)> locker { _lock };
-        _threads.emplace_back(std::bind(&thread_pool::async_schedule, this, std::move(ptask)));
-    }
-    else //if(std::launch::async == (policy & std::launch::async | std::launch::deferred))
-        _async_tasks.push(std::move(ptask));
+
+    //if(std::launch::async == (policy & std::launch::async | std::launch::deferred))
+    _async_tasks.push(std::move(ptask));
 }
 
 } // namespace core
