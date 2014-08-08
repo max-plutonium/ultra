@@ -103,60 +103,52 @@
 #   include <windows.h>
 
 #   if defined __MINGW32__
-#       define init_context_native(ctx_ptr, sp, ip) \
+#       define make_context_native(ctx_ptr, sp, ip) \
             asm volatile( \
-                /* load address of the context structure */ \
-                "movl %0, %%ecx \n" \
+                "leal -0x14(%1), %%edx \n" \
+                "movl $0x0, 0x4(%%edx) \n" \
+                "movl %2, 0xc(%%edx) \n" \
+                "movl %%edx, 0x10(%%edx) \n" \
+                "call 1f \n" \
+                "1: popl %%eax \n" \
+                "addl $context_trampoline - 1b, %%eax \n" \
+                "movl %%eax, (%%edx) \n" \
+                "jmp 2f \n" \
                 \
-                /* reserve space for context data in new stack */ \
-                "leal -0x20(%1), %%edx \n" \
+                "context_trampoline: \n" \
+                "movl %%eax, 0x4(%%esp) \n" \
+                "jmpl *0x0(%%ecx) \n" \
                 \
-                /* init registers */ \
-                "movl $0x0, 0x14(%%edx) \n" \
-                "movl $0x0, 0x10(%%edx) \n" \
-                "movl $0x0, 0xc(%%edx) \n" \
-                "movl $0x0, 0x8(%%edx) \n" \
+                "2: addl $0xc, %%edx \n" \
+                "movl %%edx, (%0) \n" \
                 \
-                /* push eflags and save them */ \
-                "pushfl \n" \
-                "popl 0x4(%%edx) \n" \
-                \
-                /* save address of data as argument for context function */ \
-                "leal -0x4(%1), %%eax \n" \
-                "movl %%eax, 0x0(%%edx) \n" \
-                \
-                /* save esp and eip */ \
-                "movl %%edx, 0x4(%%ecx) \n" \
-                "movl %2, 0x0(%%ecx) \n" \
-                \
-                :: "r"(static_cast<system::machine_context *>(ctx_ptr)) \
-                , "r"(reinterpret_cast<void *>(sp)) \
+                :: "g"(static_cast<system::machine_context **>(ctx_ptr)) \
+                , "g"(reinterpret_cast<void *>(sp)) \
                 , "r"(reinterpret_cast<void *>(ip)) \
-                : "%eax", "%ecx", "%edx", "memory");
+                : "%edx", "%eax", "memory");
 
 #       define switch_context_native(ctx_from, ctx_to, arg) \
             asm volatile( \
-                /* load address of the context-from structure */ \
-                "movl %0, %%ecx \n" \
-                \
-                /* save registers */ \
+                /* save registers and eflags */ \
+                "pushl %%ebp \n" \
                 "pushl %%ebx \n" \
                 "pushl %%edi \n" \
                 "pushl %%esi \n" \
-                "pushl %%ebp \n" \
-                \
-                /* push eflags and save them */ \
                 "pushfl \n" \
                 \
-                /* save address for place return value after jump */ \
+                /* save address of return value after jump */ \
                 "pushl %2 \n" \
                 "movl (%2), %%eax \n" \
                 \
+                /* load address of the context-from structure */ \
+                "movl %0, %%ecx \n" \
+                \
+                /* save return address */ \
+                "movl $resume_context, %%ebx \n" \
+                "pushl %%ebx \n" \
+                \
                 /* save esp */ \
                 "movl %%esp, 0x4(%%ecx) \n" \
-                \
-                /* get return address and save it as eip */ \
-                "movl $resumed, 0x0(%%ecx) \n" \
                 \
                 /* load address of the context-to structure */ \
                 "movl %1, %%ecx \n" \
@@ -164,27 +156,26 @@
                 /* restore esp */ \
                 "movl 0x4(%%ecx), %%esp \n" \
                 \
-                /* restore address for place return value after jump */ \
-                "popl %%edx \n" \
-                "movl %%eax, (%%edx) \n" \
+                /* jump to saved eip */ \
+                "retl \n" \
                 \
-                /* restore saved eflags */ \
+                "resume_context: \n" \
+                \
+                /* restore address of return value after jump */ \
+                "popl %%ebx \n" \
+                "movl %%eax, (%%ebx) \n" \
+                \
+                /* restore eflags and registers */ \
                 "popfl \n" \
-                \
-                /* restore registers */ \
-                "popl %%ebp \n" \
                 "popl %%esi \n" \
                 "popl %%edi \n" \
                 "popl %%ebx \n" \
+                "popl %%ebp \n" \
                 \
-                /* jump to saved eip */ \
-                "jmp *0x0(%%ecx) \n" \
-                "resumed: \n" \
-                \
-            :: "r"(static_cast<system::machine_context *>(ctx_from)) \
-            , "r"(static_cast<const system::machine_context *>(ctx_to)) \
-            , "r"(static_cast<std::intptr_t *>(arg)) \
-            : "%eax", "%ecx", "%edx", "memory");
+            :: "g"(static_cast<system::machine_context *>(ctx_from)) \
+            , "g"(static_cast<const system::machine_context *>(ctx_to)) \
+            , "g"(static_cast<std::intptr_t *>(arg)) \
+            : "%eax", "%ecx", "memory");
 
 #   endif
 
