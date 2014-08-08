@@ -20,10 +20,13 @@
 #   if defined __x86_64__
 #       define make_context_native(ctx_ptr, sp, ip) \
             asm volatile( \
-                "leaq -0x20(%1), %%rdx \n" \
-                "movq $0x0, 0x8(%%rdx) \n" \
-                "movq %2, 0x10(%%rdx) \n" \
-                "movq %%rdx, 0x18(%%rdx) \n" \
+                "leaq -0x20(%1), %%rdx \n" /* reserve space */ \
+                "movq $0x0, 0x8(%%rdx) \n" /* return address for context function */ \
+                "movq %2, 0x10(%%rdx) \n" /* save address of context function */ \
+                "movq %%rdx, 0x18(%%rdx) \n" /* save stack address */ \
+                \
+                /* compute abs address of context trampoline
+                 * and save it as future rip */ \
                 "leaq context_trampoline(%%rip), %%rax \n" \
                 "movq %%rax, (%%rdx) \n" \
                 "jmp 1f \n" \
@@ -32,6 +35,7 @@
                 "movq %%rax, %%rdi \n" \
                 "jmpq *0x0(%%rcx) \n" \
                 \
+                /* compute and save address of context structure */ \
                 "1: addq $0x10, %%rdx \n" \
                 "movq %%rdx, (%0) \n" \
                 \
@@ -105,10 +109,13 @@
 #   if defined __MINGW32__
 #       define make_context_native(ctx_ptr, sp, ip) \
             asm volatile( \
-                "leal -0x14(%1), %%edx \n" \
-                "movl $0x0, 0x4(%%edx) \n" \
-                "movl %2, 0xc(%%edx) \n" \
-                "movl %%edx, 0x10(%%edx) \n" \
+                "leal -0x14(%1), %%edx \n" /* reserve space */ \
+                "movl $0x0, 0x4(%%edx) \n" /* return address for context function */ \
+                "movl %2, 0xc(%%edx) \n" /* save address of context function */ \
+                "movl %%edx, 0x10(%%edx) \n" /* save stack address */ \
+                \
+                /* compute abs address of context trampoline
+                 * and save it as future eip */ \
                 "call 1f \n" \
                 "1: popl %%eax \n" \
                 "addl $context_trampoline - 1b, %%eax \n" \
@@ -119,6 +126,7 @@
                 "movl %%eax, 0x4(%%esp) \n" \
                 "jmpl *0x0(%%ecx) \n" \
                 \
+                /* compute and save address of context structure */ \
                 "2: addl $0xc, %%edx \n" \
                 "movl %%edx, (%0) \n" \
                 \
