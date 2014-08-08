@@ -11,7 +11,6 @@ namespace ultra { namespace core {
 
 class thread_pool
 {
-    mutable std::mutex _mutex;
     using task_queue = concurrent_queue<task_ptr, std::mutex>;
     task_queue _async_tasks;
 
@@ -44,10 +43,10 @@ public:
     std::chrono::milliseconds get_expiry_timeout() const;
     void set_expiry_timeout(std::chrono::milliseconds timeout);
 
-    int get_max_thread_count() const;
-    void set_max_thread_count(int count);
+    std::size_t get_max_thread_count() const;
+    void set_max_thread_count(std::size_t count);
 
-    int get_thread_count() const;
+    std::size_t get_thread_count() const;
 
     void reserve_thread();
     void release_thread();

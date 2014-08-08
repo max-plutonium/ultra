@@ -18,21 +18,7 @@ class thread_pool::worker : public std::enable_shared_from_this<worker>
     std::condition_variable _cond;
 
     bool _wait_pred() {
-        if(_pool->_async_tasks.pop(_task)) {
-            if(running != _status) {
-                _pool->_waiters.erase(this);
-                _status = running;
-            }
 
-            return true;
-        }
-
-        if(wait != _status) {
-            _pool->_waiters.insert(this);
-            _status = wait;
-        }
-
-        return false;
     }
 
     void _expire_thread() {
@@ -67,32 +53,45 @@ public:
     }
 
     void run() {
-        do {
-            if(__builtin_expect(!_task, true)) {
-                if(!_pool->_async_tasks.pop(_task)) {
-                    std::unique_lock<std::mutex> lk { _pool->_lock };
-                    while(!_pool->_exiting.load(std::memory_order_acquire)
-                          && !_wait_pred()) {
-                        if(std::cv_status::timeout
-                           == _cond.wait_for(lk, _pool->_expiry_timeout)) {
-                            _expire_thread();
-                            return;
-                        }
-                    }
-                }
-            }
-
-            if(_task) {
+        while(true) {
+            while(_task || _pool->_async_tasks.pop(_task)) {
                 _status = running;
                 task_ptr t = std::move(_task);
                 try {
                     t->run();
                 } catch(...) {
                     // TODO
+                    break;
                 }
             }
 
-        } while(!_pool->_exiting.load(std::memory_order_relaxed));
+            std::unique_lock<std::mutex> lk { _pool->_lock };
+            if(_pool->_exiting.load(std::memory_order_acquire)
+               || _pool->_too_many_active_threads())
+                break;
+
+            if(!_cond.wait_for(lk, _pool->_expiry_timeout,
+                    [this]() {
+                        if(_pool->_async_tasks.pop(_task)) {
+                            if(running != _status) {
+                                _pool->_waiters.erase(this);
+                                _status = running;
+                            }
+
+                            return true;
+                        }
+
+                        if(wait != _status) {
+                            _pool->_waiters.insert(this);
+                            _status = wait;
+                        }
+
+                        return false;
+                    })) {
+                _expire_thread();
+                return;
+            }
+        }
 
         std::unique_lock<std::mutex> lk { _pool->_lock };
         _expire_thread();
@@ -153,20 +152,20 @@ void thread_pool::set_expiry_timeout(std::chrono::milliseconds timeout)
     _expiry_timeout = timeout;
 }
 
-int thread_pool::get_max_thread_count() const
+std::size_t thread_pool::get_max_thread_count() const
 {
     std::lock_guard<std::mutex> lk { _lock };
     return _nr_max_threads;
 }
 
-void thread_pool::set_max_thread_count(int count)
+void thread_pool::set_max_thread_count(std::size_t count)
 {
     std::lock_guard<std::mutex> lk { _lock };
     _nr_max_threads = count;
     _start_more();
 }
 
-int thread_pool::get_thread_count() const
+std::size_t thread_pool::get_thread_count() const
 {
     std::lock_guard<std::mutex> lk { _lock };
     return _active_thread_count();

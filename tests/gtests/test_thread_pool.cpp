@@ -1,7 +1,6 @@
 #include "../../src/core/thread_pool.h"
 #include <gmock/gmock.h>
 #include <chrono>
-#include <queue>
 
 class mock_task : public ultra::task
 {
@@ -10,7 +9,32 @@ public:
     MOCK_METHOD0(run, void());
 };
 
-TEST(test_thread_pool, schedule_simple)
+class test_thread_pool : public testing::Test
+{
+protected:
+    std::atomic_size_t _function_count;
+
+public:
+    test_thread_pool() : _function_count(0) { }
+
+    void test_function_empty() { }
+
+    void test_function_nosleep() {
+        ++_function_count;
+    }
+
+    void test_function_sleep(std::size_t msecs) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(msecs));
+        ++_function_count;
+    }
+
+    std::string fff(std::string &r) {
+
+        return r.append("123");
+    }
+};
+
+TEST_F(test_thread_pool, schedule_simple)
 {
     using namespace ultra;
     mock_task *mt = new mock_task;
@@ -23,19 +47,42 @@ TEST(test_thread_pool, schedule_simple)
     pool.wait_for_done();
 }
 
-std::string fff(std::string &r) {
-
-    return r.append("123");
-}
-
-TEST(test_thread_pool, schedule_callable)
+TEST_F(test_thread_pool, schedule_function_nosleep)
 {
     using namespace ultra;
 
-    core::thread_pool pool;
-    std::string rr = "9";
-    auto fut = pool.schedule(fff, rr);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    std::string r = fut.get();
-    r.at(1);
+    {
+        core::thread_pool pool;
+        pool.schedule(&test_thread_pool::test_function_nosleep, this);
+    }
+
+    ASSERT_EQ(1, _function_count);
+}
+
+TEST_F(test_thread_pool, schedule_function_multiple)
+{
+    using namespace ultra;
+    const int runs = 10;
+
+    {
+        core::thread_pool pool;
+        for(int i = 0; i < runs; ++i)
+            pool.schedule(&test_thread_pool::test_function_sleep, this, 1000);
+    }
+
+    EXPECT_EQ(runs, _function_count);
+
+    {
+        core::thread_pool pool;
+        for(int i = 0; i < runs; ++i)
+            pool.schedule(&test_thread_pool::test_function_nosleep, this);
+    }
+
+    EXPECT_EQ(runs * 2, _function_count);
+
+    {
+        core::thread_pool pool;
+        for(int i = 0; i < runs; ++i)
+            pool.schedule(&test_thread_pool::test_function_empty, this);
+    }
 }
