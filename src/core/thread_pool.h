@@ -5,7 +5,6 @@
 #include <mutex>
 #include "concurrent_queue.h"
 #include <list>
-#include <unordered_set>
 
 namespace ultra { namespace core {
 
@@ -16,14 +15,14 @@ class thread_pool
 
     std::size_t _nr_max_threads;
     std::size_t _nr_reserved;
-    std::atomic_bool _exiting;
+    std::atomic_bool _shutdown;
     std::chrono::milliseconds _expiry_timeout;
 
     class worker;
     mutable std::mutex _lock;
     using worker_ptr = std::shared_ptr<worker>;
     std::list<worker_ptr> _active_threads;
-    std::unordered_set<worker *> _waiters;
+    std::list<worker_ptr> _waiters;
     std::list<worker_ptr> _expired_threads;
     std::condition_variable _no_active_threads;
 

@@ -42,9 +42,9 @@ TEST_F(test_thread_pool, schedule_simple)
 
     EXPECT_CALL(*mt, run()).Times(1);
 
-    core::thread_pool pool;
-    pool.schedule(std::move(ptask));
-    pool.wait_for_done();
+    core::thread_pool *pool = core::thread_pool::instance();
+    pool->schedule(std::move(ptask));
+    pool->wait_for_done();
 }
 
 TEST_F(test_thread_pool, schedule_function_nosleep)
@@ -67,7 +67,7 @@ TEST_F(test_thread_pool, schedule_function_multiple)
     {
         core::thread_pool pool;
         for(int i = 0; i < runs; ++i)
-            pool.schedule(&test_thread_pool::test_function_sleep, this, 1000);
+            pool.schedule(&test_thread_pool::test_function_sleep, this, 100);
     }
 
     EXPECT_EQ(runs, _function_count);
@@ -82,7 +82,20 @@ TEST_F(test_thread_pool, schedule_function_multiple)
 
     {
         core::thread_pool pool;
-        for(int i = 0; i < runs; ++i)
+        for(int i = 0; i < 5000; ++i)
             pool.schedule(&test_thread_pool::test_function_empty, this);
     }
+}
+
+TEST_F(test_thread_pool, wait_for_done)
+{
+    using namespace ultra;
+    const int runs = 1000;
+
+    for(int i = 0; i < runs; ++i) {
+        core::thread_pool pool;
+        pool.schedule(&test_thread_pool::test_function_nosleep, this);
+    }
+
+    ASSERT_EQ(runs, _function_count);
 }

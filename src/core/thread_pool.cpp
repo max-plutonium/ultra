@@ -17,10 +17,6 @@ class thread_pool::worker : public std::enable_shared_from_this<worker>
     std::list<thread_pool::worker_ptr>::iterator _id;
     std::condition_variable _cond;
 
-    bool _wait_pred() {
-
-    }
-
     void _expire_thread() {
         _status = expired;
         _pool->_active_threads.erase(_id);
@@ -52,10 +48,16 @@ public:
         _thread = std::thread(std::bind(&worker::run, shared_from_this()));
     }
 
+    void resume(task_ptr ptask, std::list<thread_pool::worker_ptr>::iterator id) {
+        _task = std::move(ptask);
+        _id = id;
+        wake_up();
+    }
+
     void run() {
         while(true) {
+            _status = running;
             while(_task || _pool->_async_tasks.pop(_task)) {
-                _status = running;
                 task_ptr t = std::move(_task);
                 try {
                     t->run();
@@ -66,42 +68,36 @@ public:
             }
 
             std::unique_lock<std::mutex> lk { _pool->_lock };
-            if(_pool->_exiting.load(std::memory_order_acquire)
-               || _pool->_too_many_active_threads())
-                break;
+            bool exp = _pool->_too_many_active_threads() || _pool->_shutdown;
 
-            if(!_cond.wait_for(lk, _pool->_expiry_timeout,
-                    [this]() {
-                        if(_pool->_async_tasks.pop(_task)) {
-                            if(running != _status) {
-                                _pool->_waiters.erase(this);
-                                _status = running;
-                            }
+            if(!exp) {
+                _status = wait;
+                _pool->_active_threads.erase(_id);
+                _pool->_waiters.push_back(shared_from_this());
+                _id = --_pool->_waiters.end();
+                const std::cv_status waitres = _cond.wait_for(lk, _pool->_expiry_timeout);
+                if(std::cv_status::timeout == waitres)
+                    exp = true;
+                else
+                    exp = !static_cast<bool>(_task);
+            }
 
-                            return true;
-                        }
-
-                        if(wait != _status) {
-                            _pool->_waiters.insert(this);
-                            _status = wait;
-                        }
-
-                        return false;
-                    })) {
+            if(exp) {
                 _expire_thread();
-                return;
+                break;
             }
         }
 
-        std::unique_lock<std::mutex> lk { _pool->_lock };
-        _expire_thread();
+//        std::unique_lock<std::mutex> lk { _pool->_lock };
+//        _expire_thread();
+        _status = stop;
     }
 };
 
 thread_pool::thread_pool()
     : _nr_max_threads(std::thread::hardware_concurrency())
     , _nr_reserved(0)
-    , _exiting(false)
+    , _shutdown(false)
     , _expiry_timeout(30000)
 {
 }
@@ -186,8 +182,8 @@ void thread_pool::release_thread()
 
 void thread_pool::wait_for_done()
 {
-    _exiting.store(true, std::memory_order_release);
     std::unique_lock<std::mutex> lk { _lock };
+    _shutdown = true;
     while(_active_threads.size()) {
         worker_ptr t = _active_threads.front();
         while(worker::expired < t->_status) {
@@ -204,7 +200,7 @@ void thread_pool::wait_for_done()
     _waiters.clear();
     _expired_threads.clear();
 
-    _exiting.store(false, std::memory_order_release);
+    _shutdown = false;
 }
 
 void thread_pool::schedule(std::launch policy, task_ptr ptask)
@@ -213,12 +209,13 @@ void thread_pool::schedule(std::launch policy, task_ptr ptask)
     {
         std::lock_guard<std::mutex> lk { _lock };
         if(!_waiters.empty()) {
-            (*_waiters.begin())->wake_up();
-            _async_tasks.push(std::move(ptask));
+            _active_threads.push_back(std::move(_waiters.front()));
+            _waiters.pop_front();
+            _active_threads.back()->resume(std::move(ptask), --_active_threads.end());
             return;
         }
         else if(!_expired_threads.empty()) {
-            _active_threads.push_back(*_expired_threads.begin());
+            _active_threads.push_back(std::move(_expired_threads.front()));
             _expired_threads.pop_front();
             _active_threads.back()->start(std::move(ptask), --_active_threads.end());
         }
