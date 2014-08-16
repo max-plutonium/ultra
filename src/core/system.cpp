@@ -8,7 +8,6 @@
 #include <cstring>  // memset
 #include <cassert>
 #include <algorithm> // std::min, std::max
-#include <csetjmp>
 
 #if defined __unix__
 #   include <unistd.h>          // sysconf
@@ -17,175 +16,173 @@
 #   include <fcntl.h>           // open, close
 #   include <sys/mman.h>        // mmap, munmap, mprotect
 
-#   if defined __x86_64__
-#       define make_context_native(ctx_ptr, sp, ip) \
-            asm volatile( \
-                "leaq -0x20(%1), %%rdx \n" /* reserve space */ \
-                "movq $0x0, 0x8(%%rdx) \n" /* return address for context function */ \
-                "movq %2, 0x10(%%rdx) \n" /* save address of context function */ \
-                "movq %%rdx, 0x18(%%rdx) \n" /* save stack address */ \
-                \
-                /* compute abs address of context trampoline
-                 * and save it as future rip */ \
-                "leaq context_trampoline(%%rip), %%rax \n" \
-                "movq %%rax, (%%rdx) \n" \
-                "jmp 1f \n" \
-                \
-                "context_trampoline: \n" \
-                "movq %%rax, %%rdi \n" \
-                "jmpq *0x0(%%rcx) \n" \
-                \
-                /* compute and save address of context structure */ \
-                "1: addq $0x10, %%rdx \n" \
-                "movq %%rdx, (%0) \n" \
-                \
-                :: "g"(static_cast<system::machine_context **>(ctx_ptr)) \
-                , "g"(reinterpret_cast<void *>(sp)) \
-                , "r"(reinterpret_cast<void *>(ip)) \
-                : "%rdx", "%rax", "memory");
-
-#       define switch_context_native(ctx_from, ctx_to, arg) \
-            asm volatile( \
-                "leaq -0x18(%%rsp), %%rsp \n" \
-                \
-                /* save registers and rflags */ \
-                "pushq %%rbp \n" \
-                "pushq %%rbx \n" \
-                "pushq %%r15 \n" \
-                "pushq %%r14 \n" \
-                "pushq %%r13 \n" \
-                "pushq %%r12 \n" \
-                "pushfq \n" \
-                \
-                /* save address of return value after jump */ \
-                "pushq %2 \n" \
-                "movq (%2), %%rax \n" \
-                \
-                /* load address of the context-from structure */ \
-                "movq %0, %%rcx \n" \
-                \
-                /* save return address */ \
-                "leaq resume_context(%%rip), %%rbx \n" \
-                "pushq %%rbx \n" \
-                \
-                /* save rsp */ \
-                "movq %%rsp, 0x8(%%rcx) \n" \
-                \
-                /* load address of the context-to structure */ \
-                "movq %1, %%rcx \n" \
-                \
-                /* restore rsp */ \
-                "movq 0x8(%%rcx), %%rsp \n" \
-                \
-                /* jump to saved rip */ \
-                "retq \n" \
-                \
-                "resume_context: \n" \
-                \
-                /* restore address of return value after jump */ \
-                "popq %%rbx \n" \
-                "movq %%rax, (%%rbx) \n" \
-                \
-                /* restore rflags and registers */ \
-                "popfq \n" \
-                "popq %%r12 \n" \
-                "popq %%r13 \n" \
-                "popq %%r14 \n" \
-                "popq %%r15 \n" \
-                "popq %%rbx \n" \
-                "popq %%rbp \n" \
-                \
-                "leaq 0x18(%%rsp), %%rsp \n" \
-                \
-            :: "g"(static_cast<system::machine_context *>(ctx_from)) \
-            , "g"(static_cast<const system::machine_context *>(ctx_to)) \
-            , "g"(static_cast<std::intptr_t *>(arg)) \
-            : "%rax", "%rcx", "memory");
-#   endif
-
 #elif defined __windows__
 #   include <windows.h>
 
-#   if defined __MINGW32__
-#       define make_context_native(ctx_ptr, sp, ip) \
-            asm volatile( \
-                "leal -0x14(%1), %%edx \n" /* reserve space */ \
-                "movl $0x0, 0x4(%%edx) \n" /* return address for context function */ \
-                "movl %2, 0xc(%%edx) \n" /* save address of context function */ \
-                "movl %%edx, 0x10(%%edx) \n" /* save stack address */ \
-                \
-                /* compute abs address of context trampoline
-                 * and save it as future eip */ \
-                "call 1f \n" \
-                "1: popl %%eax \n" \
-                "addl $context_trampoline - 1b, %%eax \n" \
-                "movl %%eax, (%%edx) \n" \
-                "jmp 2f \n" \
-                \
-                "context_trampoline: \n" \
-                "movl %%eax, 0x4(%%esp) \n" \
-                "jmpl *0x0(%%ecx) \n" \
-                \
-                /* compute and save address of context structure */ \
-                "2: addl $0xc, %%edx \n" \
-                "movl %%edx, (%0) \n" \
-                \
-                :: "g"(static_cast<system::machine_context **>(ctx_ptr)) \
-                , "g"(reinterpret_cast<void *>(sp)) \
-                , "r"(reinterpret_cast<void *>(ip)) \
-                : "%edx", "%eax", "memory");
+#else
+#   error "platform not supported"
 
-#       define switch_context_native(ctx_from, ctx_to, arg) \
-            asm volatile( \
-                /* save registers and eflags */ \
-                "pushl %%ebp \n" \
-                "pushl %%ebx \n" \
-                "pushl %%edi \n" \
-                "pushl %%esi \n" \
-                "pushfl \n" \
-                \
-                /* save address of return value after jump */ \
-                "pushl %2 \n" \
-                "movl (%2), %%eax \n" \
-                \
-                /* load address of the context-from structure */ \
-                "movl %0, %%ecx \n" \
-                \
-                /* save return address */ \
-                "movl $resume_context, %%ebx \n" \
-                "pushl %%ebx \n" \
-                \
-                /* save esp */ \
-                "movl %%esp, 0x4(%%ecx) \n" \
-                \
-                /* load address of the context-to structure */ \
-                "movl %1, %%ecx \n" \
-                \
-                /* restore esp */ \
-                "movl 0x4(%%ecx), %%esp \n" \
-                \
-                /* jump to saved eip */ \
-                "retl \n" \
-                \
-                "resume_context: \n" \
-                \
-                /* restore address of return value after jump */ \
-                "popl %%ebx \n" \
-                "movl %%eax, (%%ebx) \n" \
-                \
-                /* restore eflags and registers */ \
-                "popfl \n" \
-                "popl %%esi \n" \
-                "popl %%edi \n" \
-                "popl %%ebx \n" \
-                "popl %%ebp \n" \
-                \
-            :: "g"(static_cast<system::machine_context *>(ctx_from)) \
-            , "g"(static_cast<const system::machine_context *>(ctx_to)) \
-            , "g"(static_cast<std::intptr_t *>(arg)) \
-            : "%eax", "%ecx", "memory");
+#endif
 
-#   endif
+#if defined __x86_64__ /* UNIX System V ABI only */
+#   define make_context_native(ctx_ptr, sp, ip) \
+        asm volatile( \
+            "subq $0x20, %[stack] \n" /* reserve space */ \
+            "movq $0x0, 0x8(%[stack]) \n" /* return address for context function */ \
+            "movq %[function], 0x10(%[stack]) \n" /* save address of context function */ \
+            "movq %[stack], 0x18(%[stack]) \n" /* save stack address */ \
+            \
+            /* compute abs address of context trampoline
+             * and save it as future rip */ \
+            "leaq context_trampoline(%%rip), %%rax \n" \
+            "movq %%rax, (%[stack]) \n" \
+            "jmp 1f \n" \
+            \
+            "context_trampoline: \n" \
+            "movq %%rax, %%rdi \n" \
+            "jmpq *0x0(%%rcx) \n" \
+            \
+            /* compute and save address of context structure */ \
+            "1: addq $0x10, %[stack] \n" \
+            \
+        : "=r"(ctx_ptr) : [stack] "0"(sp), [function] "r"(ip) \
+        : "memory", "%rax");
+
+#   define switch_context_native(ctx_from, ctx_to, arg) \
+        asm volatile( \
+            /* save registers and rflags */ \
+            "pushq %%rbp \n" \
+            "pushq %%rbx \n" \
+            "pushq %%r15 \n" \
+            "pushq %%r14 \n" \
+            "pushq %%r13 \n" \
+            "pushq %%r12 \n" \
+            "pushfq \n" \
+            \
+            /* save return address */ \
+            "leaq resume_context(%%rip), %%rbx \n" \
+            "pushq %%rbx \n" \
+            \
+            /* exchange rsp */ \
+            "movq %%rsp, 0x8(%[prev]) \n" \
+            "movq 0x8(%[next]), %%rsp \n" \
+            \
+            /* jump to saved rip */ \
+            "retq \n" \
+            "resume_context: \n" \
+            \
+            /* restore rflags and registers */ \
+            "popfq \n" \
+            "popq %%r12 \n" \
+            "popq %%r13 \n" \
+            "popq %%r14 \n" \
+            "popq %%r15 \n" \
+            "popq %%rbx \n" \
+            "popq %%rbp \n" \
+            \
+        : "+a"(arg) : [prev] "d"(ctx_from), [next] "c"(ctx_to) \
+        : "memory");
+
+#elif defined __MINGW32__
+#   define make_context_native(ctx_ptr, sp, ip) \
+        asm volatile( \
+            "subl $0x14, %[stack] \n" /* reserve space */ \
+            "movl $0x0, 0x4(%[stack]) \n" /* return address for context function */ \
+            "movl %[function], 0xc(%[stack]) \n" /* save address of context function */ \
+            "movl %[stack], 0x10(%[stack]) \n" /* save stack address */ \
+            \
+            /* compute abs address of context trampoline
+             * and save it as future eip */ \
+            "call 1f \n" \
+            "1: popl %%eax \n" \
+            "addl $context_trampoline - 1b, %%eax \n" \
+            "movl %%eax, (%[stack]) \n" \
+            "jmp 2f \n" \
+            \
+            "context_trampoline: \n" \
+            "movl %%eax, 0x4(%%esp) \n" \
+            "jmpl *0x0(%%ecx) \n" \
+            \
+            /* compute and save address of context structure */ \
+            "2: addl $0xc, %[stack] \n" \
+            \
+        : "=r"(ctx_ptr) : [stack] "0"(sp), [function] "r"(ip) \
+        : "memory", "%eax");
+
+#   define switch_context_native(ctx_from, ctx_to, arg) \
+        asm volatile( \
+            /* save registers and eflags */ \
+            "pushl %%ebp \n" \
+            "pushl %%ebx \n" \
+            "pushl %%edi \n" \
+            "pushl %%esi \n" \
+            "pushfl \n" \
+            \
+            /* save return address */ \
+            "movl $resume_context, %%ebx \n" \
+            "pushl %%ebx \n" \
+            \
+            /* exchange esp */ \
+            "movl %%esp, 0x4(%[prev]) \n" \
+            "movl 0x4(%[next]), %%esp \n" \
+            \
+            /* jump to saved eip */ \
+            "retl \n" \
+            "resume_context: \n" \
+            \
+            /* restore eflags and registers */ \
+            "popfl \n" \
+            "popl %%esi \n" \
+            "popl %%edi \n" \
+            "popl %%ebx \n" \
+            "popl %%ebp \n" \
+            \
+        : "+a"(arg) : [prev] "d"(ctx_from), [next] "c"(ctx_to) \
+        : "memory");
+
+#elif defined __arm__
+#   define make_context_native(ctx_ptr, sp, ip) \
+        asm volatile( \
+            "sub %[stack], %[stack], #16 \n" /* reserve space */ \
+            "str %[stack], [%[stack], #8] \n" /* save stack address */ \
+            "str %[function], [%[stack], #12] \n" /* save address of context function */ \
+            \
+            /* compute and save address of context structure */ \
+            "add %[stack], %[stack], #8 \n" \
+            \
+        : "=r"(ctx_ptr) : [stack] "0"(sp), [function] "r"(ip) \
+        : "memory");
+
+#   define switch_context_native(ctx_from, ctx_to, arg) \
+        asm volatile( \
+            /* save registers */ \
+            "stmdb %%sp!, { %%r4-%%r12, %%lr } \n" \
+            \
+            /* save cpsr flag register */ \
+            "mrs %%lr, cpsr \n" \
+            "stmdb %%sp!, { %%lr } \n" \
+            \
+            /* save stack pointer and return address */ \
+            "adr %%lr, resume_context \n" \
+            "stmia %[prev], { %%sp, %%lr } \n" \
+            \
+            /* set ret address and argument for context function */ \
+            "mov %%lr, #0 \n"  \
+            "mov %%r0, %[data] \n" \
+            \
+            /* load stack pointer and jump */ \
+            "ldmia %[next], { %%sp, %%pc } \n" \
+            "resume_context: \n" \
+            \
+            /* restore cpsr flag register*/ \
+            "ldmia %%sp!, { %%lr } \n" \
+            "msr cpsr, %%lr \n" \
+            \
+            /* restore registers */ \
+            "ldmia %%sp!, { %%r4-%%r12, %%lr } \n" \
+            \
+        : [data] "+r"(arg) : [prev] "r"(ctx_from), [next] "r"(ctx_to) \
+        : "memory", "r0");
 
 #else
 #   error "platform not supported"
@@ -234,7 +231,7 @@ system::machine_context *
 system::make_context(const stack &astack, void (*func)(std::intptr_t))
 {
     machine_context *ret;
-    make_context_native(&ret, astack.second, func);
+    make_context_native(ret, astack.second, func);
     return ret;
 }
 
@@ -242,7 +239,7 @@ system::make_context(const stack &astack, void (*func)(std::intptr_t))
 std::intptr_t system::switch_context(machine_context &from,
                         const machine_context &to, std::intptr_t data)
 {
-    switch_context_native(&from, &to, &data);
+    switch_context_native(&from, &to, data);
     return data;
 }
 
