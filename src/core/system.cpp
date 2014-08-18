@@ -25,30 +25,52 @@
 #endif
 
 #if defined __x86_64__ /* UNIX System V ABI only */
+    /*
+     *  Context data description:
+     *
+     *  0   RFLAGS
+     *  8   R12
+     *  16  R13
+     *  24  R14
+     *  32  R15
+     *  40  RBX
+     *  48  RBP
+     *  56  prevRBP
+     *  64  startRIP
+     *  72  ctxRIP
+     *  80  ctxRET
+     */
+
 #   define make_context_native(ctx_ptr, sp, ip) \
         asm volatile( \
             /* reserve space for context structure at top
              * of context stack and align stack on 16 byte boundary */ \
-            "subq $32, %[stack] \n" \
+            "subq $16, %[stack] \n" \
             "movq %[stack], %[context] \n" \
             "andq $-16, %[stack] \n" \
             \
-            /* reserve space for the return address and pointer
-             * to context function, save real function to stack and
-             * then save stack pointer for context function */ \
-            "leaq -16(%[stack]), %[stack] \n" \
-            "movq %[function], 0(%[stack]) \n" \
-            "movq %[stack], 0(%[context]) \n" \
+            /* reserve space for init values for context data */ \
+            "leaq -88(%[stack]), %[stack] \n" \
+            \
+            /* save init frame pointer value pointed to null */ \
+            "movq %[stack], 48(%[stack]) \n" \
+            "movq %[stack], 56(%[stack]) \n" \
+            \
+            /* save pointer to real function */ \
+            "movq %[function], 72(%[stack]) \n" \
             \
             /* compute abs address of label init_context
              * and save it as address of context function */ \
             "leaq init_context(%%rip), %[function] \n" \
-            "movq %[function], 8(%[context]) \n" \
+            "movq %[function], 64(%[stack]) \n" \
             \
             /* compute abs address of label fini_context
              * and save it as return address for context function */ \
             "leaq fini_context(%%rip), %[function] \n" \
-            "movq %[function], 8(%[stack]) \n" \
+            "movq %[function], 80(%[stack]) \n" \
+            \
+            /* save stack pointer for context function */ \
+            "movq %[stack], 0(%[context]) \n" \
             "jmp bail \n" \
             \
             /* start context function */ \
@@ -59,7 +81,7 @@
             /* exit application with zero exit code */ \
             "fini_context: \n" \
             "xorq %%rdi, %%rdi \n" \
-            "call _exit \n" \
+            "call _exit@PLT \n" \
             "hlt \n bail: \n" \
             \
         : [context] "=&rm"(ctx_ptr) : [stack] "r"(sp), [function] "r"(ip) \
@@ -76,16 +98,12 @@
             "pushq %%r12 \n" \
             "pushfq \n" \
             \
-            /* save return address and stack pointer */ \
-            "movq $resume_context, 8(%[prev]) \n" \
+            /* exchange stack pointer */ \
             "movq %%rsp, 0(%[prev]) \n" \
-            \
-            /* restore stack pointer and jump */ \
             "movq 0(%[next]), %%rsp \n" \
-            "jmpq *8(%[next]) \n" \
             \
             /* restore rflags and registers */ \
-            "resume_context: popfq \n" \
+            "popfq \n" \
             "popq %%r12 \n" \
             "popq %%r13 \n" \
             "popq %%r14 \n" \
@@ -97,34 +115,55 @@
         : "memory");
 
 #elif defined __MINGW32__
+    /*
+     *  Context data description:
+     *
+     *  0   EFLAGS
+     *  4   ESI
+     *  8   EDI
+     *  12  EBX
+     *  16  EBP
+     *  20  prevEBP
+     *  24  startEIP
+     *  28  ctxEIP
+     *  32  ctxRET
+     *  36  space for args (16 bytes)
+     */
+
 #   define make_context_native(ctx_ptr, sp, ip) \
         asm volatile( \
             /* reserve space for context structure at top
              * of context stack and align stack on 16 byte boundary */ \
-            "subl $16, %[stack] \n" \
+            "subl $8, %[stack] \n" \
             "movl %[stack], %[context] \n" \
             "andl $-16, %[stack] \n" \
             \
-            /* reserve space for the return address, args and
-             * pointer to context function, save real function to stack
-             * and then save stack pointer for context function */ \
-            "leal -24(%[stack]), %[stack] \n" \
-            "movl %[function], 0(%[stack]) \n" \
-            "movl %[stack], 0(%[context]) \n" \
+            /* reserve space for init values for context data */ \
+            "leal -52(%[stack]), %[stack] \n" \
+            \
+            /* save init frame pointer value pointed to null */ \
+            "movl %[stack], 16(%[stack]) \n" \
+            "movl %[stack], 20(%[stack]) \n" \
+            \
+            /* save pointer to real function */ \
+            "movl %[function], 28(%[stack]) \n" \
             \
             /* compute abs address of label init_context
              * and save it as address of context function */ \
             "call 1f \n" \
             "1: popl %[function] \n" \
             "addl $init_context - 1b, %[function] \n" \
-            "movl %[function], 4(%[context]) \n" \
+            "movl %[function], 24(%[stack]) \n" \
             \
             /* compute abs address of label fini_context
              * and save it as return address for context function */ \
             "call 2f \n" \
             "2: popl %[function] \n" \
             "addl $fini_context - 2b, %[function] \n" \
-            "movl %[function], 4(%[stack]) \n" \
+            "movl %[function], 32(%[stack]) \n" \
+            \
+            /* save stack pointer for context function */ \
+            "movl %[stack], 0(%[context]) \n" \
             "jmp bail \n" \
             \
             /* start context function */ \
@@ -151,16 +190,12 @@
             "pushl %%esi \n" \
             "pushfl \n" \
             \
-            /* save return address and stack pointer */ \
-            "movl $resume_context, 4(%[prev]) \n" \
+            /* exchange stack pointer */ \
             "movl %%esp, 0(%[prev]) \n" \
-            \
-            /* restore stack pointer and jump */ \
             "movl 0(%[next]), %%esp \n" \
-            "jmpl *4(%[next]) \n" \
             \
             /* restore eflags and registers */ \
-            "resume_context: popfl \n" \
+            "popfl \n" \
             "popl %%esi \n" \
             "popl %%edi \n" \
             "popl %%ebx \n" \
@@ -170,30 +205,57 @@
         : "memory");
 
 #elif defined __arm__
+    /*
+     *  Context data description:
+     *
+     *  0   CPSR
+     *  4   R4
+     *  8   R5
+     *  12  R6
+     *  16  R7
+     *  20  R8
+     *  24  R9
+     *  28  R10
+     *  32  R11 (FP)
+     *  36  R12 (IP)
+     *  40  R14 (LR)
+     *  44  prevFP
+     *  48  ctxLR
+     *  52  ctxPC
+     */
+
 #   define make_context_native(ctx_ptr, sp, ip) \
         asm volatile( \
             /* reserve space for context structure at top
              * of context stack and align stack on 16 byte boundary */ \
-            "sub %[stack], %[stack], #16 \n" \
+            "sub %[stack], %[stack], #8 \n" \
             "mov %[context], %[stack] \n" \
             "bic %[stack], %[stack], #15 \n" \
             \
-            /* reserve space for the return address and pointer
-             * to context function, save real function to stack and
-             * then save stack pointer for context function */ \
-            "sub %[stack], %[stack], #8 \n" \
-            "str %[function], [%[stack], #4] \n" \
-            "str %[stack], [%[context], #0] \n" \
+            /* reserve space for init values for context data */ \
+            "sub %[stack], %[stack], #56 \n" \
+            \
+            /* save init frame pointer value pointed to null */ \
+            "add %[stack], %[stack], #44 \n" \
+            "str %[stack], [%[stack], #-12] \n" \
+            "str %[stack], [%[stack]] \n" \
+            "sub %[stack], %[stack], #44 \n" \
+            \
+            /* save pointer to real function */ \
+            "str %[function], [%[stack], #52] \n" \
             \
             /* compute abs address of label init_context
              * and save it as address of context function */ \
             "adr %[function], init_context \n" \
-            "str %[function], [%[context], #4] \n" \
+            "str %[function], [%[stack], #40] \n" \
             \
             /* compute abs address of label fini_context
              * and save it as return address for context function */ \
             "adr %[function], fini_context \n" \
-            "str %[function], [%[stack], #0] \n" \
+            "str %[function], [%[stack], #48] \n" \
+            \
+            /* save stack pointer for context function */ \
+            "str %[stack], [%[context], #0] \n" \
             "b bail \n" \
             \
             /* start context function */ \
@@ -203,8 +265,7 @@
             /* exit application with zero exit code */ \
             "fini_context: \n" \
             "mov %%r0, #0 \n" \
-            "bl _exit \n" \
-            "bail: \n" \
+            "bl _exit \n bail: \n" \
             \
         : [context] "=&rm"(ctx_ptr) : [stack] "r"(sp), [function] "r"(ip) \
         : "memory");
@@ -218,25 +279,19 @@
             "mrs %%lr, cpsr \n" \
             "stmdb %%sp!, { %%lr } \n" \
             \
-            /* save stack pointer and return address */ \
-            "adr %%lr, resume_context \n" \
-            "stmia %[prev], { %%sp, %%lr } \n" \
-            \
-            /* set argument for context function,
-             * restore stack pointer and jump */ \
-            "mov %%r0, %[data] \n" \
-            "ldmia %[next], { %%sp, %%pc } \n" \
+            /* exchange stack pointer */ \
+            "str %%sp, [%[prev], #0] \n" \
+            "ldr %%sp, [%[next], #0] \n" \
             \
             /* restore CPSR flag register*/ \
-            "resume_context: \n" \
             "ldmia %%sp!, { %%lr } \n" \
             "msr cpsr, %%lr \n" \
             \
             /* restore registers */ \
             "ldmia %%sp!, { %%r4-%%r12, %%lr } \n" \
             \
-        : [data] "+r"(arg) : [prev] "r"(ctx_from), [next] "r"(ctx_to) \
-        : "memory", "r0");
+        : "+r"(arg) : [prev] "r"(ctx_from), [next] "r"(ctx_to) \
+        : "memory");
 
 #else
 #   error "platform not supported"

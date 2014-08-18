@@ -12,7 +12,7 @@ public:
     static std::size_t get_pagesize();
     static std::size_t get_pagecount(std::size_t memsize);
 
-    using machine_context = void *[4];
+    using machine_context = void *[2];
     using stack = std::pair<std::size_t, void *>;
 
     static machine_context *

@@ -43,7 +43,6 @@ static void test_system_context_function(std::intptr_t arg)
     ASSERT_EQ(555, arg);
     arg = system::switch_context(*test_system_instance->child_ctx,
                                  test_system_instance->this_ctx, 666);
-
     while(true) {
         arg = system::switch_context(*test_system_instance->child_ctx,
                                      test_system_instance->this_ctx, arg - 1);
@@ -55,6 +54,7 @@ TEST_F(test_system, context_switch)
     test_system_instance = this;
     system::stack stack = system::allocate_stack(65535);
     child_ctx = system::make_context(stack, &test_system_context_function);
+    ASSERT_TRUE(child_ctx);
 
     std::intptr_t result = system::switch_context(this_ctx, *child_ctx, 111);
     ASSERT_EQ(222, result);
