@@ -7,12 +7,12 @@ namespace ultra { namespace core {
 
 template <typename Tp> class is_lockable
 {
-    template <typename Up>
+  template <typename Up>
     static constexpr bool check(decltype(std::declval<Up>().lock())*,
                                 decltype(std::declval<Up>().unlock())*)
     { return true; }
 
-    template <typename>
+  template <typename>
     static constexpr bool check(...) { return false; }
 
 public:

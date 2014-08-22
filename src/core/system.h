@@ -6,28 +6,38 @@
 
 namespace ultra { namespace core {
 
+using context_entry = std::intptr_t (*)(std::intptr_t);
+using machine_context = void *[2];
+using machine_stack = std::pair<std::size_t, void *>;
+
 class system
 {
 public:
     static std::size_t get_pagesize();
     static std::size_t get_pagecount(std::size_t memsize);
 
-    using machine_context = void *[2];
-    using stack = std::pair<std::size_t, void *>;
-
     static machine_context *
-    make_context(const stack &astack, void (*func)(std::intptr_t));
+    make_context(const machine_stack &astack,
+        context_entry entry, machine_context *parent = nullptr);
 
     static std::intptr_t
-    switch_context(machine_context &from,
-        const machine_context &to, std::intptr_t data = 0);
+    switch_context(machine_context *from,
+        machine_context *to, std::intptr_t data = 0);
+
+    static bool inside_context();
+    static machine_context *current_context();
+
+    static std::intptr_t install_context(
+        machine_context *ctx, std::intptr_t data);
+
+    static std::intptr_t yield_context(std::intptr_t data);
 
     static bool is_stack_unbound();
     static std::size_t default_stacksize();
     static std::size_t minimum_stacksize();
     static std::size_t maximum_stacksize();
-    static stack allocate_stack(std::size_t stack_size);
-    static void deallocate_stack(stack &);
+    static machine_stack allocate_stack(std::size_t stack_size);
+    static void deallocate_stack(machine_stack &);
 };
 
 } // namespace core
