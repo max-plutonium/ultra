@@ -1,0 +1,7 @@
+
+
+LIBFFI_PATH = $$absolute_path($$PWD)/../libffi/x86_64-suse-linux-gnu
+INCLUDEPATH += $$LIBFFI_PATH/include
+
+unix: LIBS += -L/usr/local/lib64 -lffi
+else: win32: LIBS += -lffi
