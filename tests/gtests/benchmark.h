@@ -34,13 +34,13 @@ public:
 class benchmark_controller
 {
     const char *name;
-    std::uint64_t iteration;
-    const std::uint64_t iterations;
+    std::uint32_t iteration;
+    const std::uint32_t iterations;
     benchmark_cpuclock_timer cpu_timer;
     benchmark_omp_timer omp_timer;
 
 public:
-    benchmark_controller(const char *aname, std::uint64_t aiterations);
+    benchmark_controller(const char *aname, std::uint32_t aiterations);
     ~benchmark_controller();
     bool is_done();
 };
