@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <deque>
+#include <cstdint>
 
 namespace ultra { namespace core {
 
@@ -50,7 +51,7 @@ public:
     void reserve_thread();
     void release_thread();
 
-    bool wait_for_done(int msecs = INT_MAX);
+    bool wait_for_done(int msecs = INT32_MAX);
     void reset();
 
   template <typename Callable, typename... Args>

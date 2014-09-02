@@ -193,7 +193,7 @@ void thread_pool::run_async(task_ptr ptask)
     }
 
     else {
-        std::size_t max_tasks = UINT_MAX;
+        std::size_t max_tasks = UINT32_MAX;
         thread_ptr thread;
         for(thread_ptr t : _threads) {
             if(t->get_task_count() < max_tasks)
