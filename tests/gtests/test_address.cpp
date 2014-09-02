@@ -78,6 +78,8 @@ TEST_F(test_address, ctors_benchmark)
     }
 }
 
+#include <algorithm>
+
 TEST_F(test_address, hash_benchmark)
 {
     constexpr int iterations = 1000000;

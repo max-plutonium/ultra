@@ -11,7 +11,7 @@ TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
-load(ultra_cds)
+#load(ultra_cds)
 load(ultra_boost)
 
 
@@ -47,7 +47,10 @@ CONFIG(debug, debug|release) {
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
-    win32*: LIBS += -lpthread
+    win32 {
+        LIBS += -lpthread
+        DEFINES += _GLIBCXX_HAS_GTHREADS
+    }
 }
 
 
@@ -58,7 +61,7 @@ HEADERS += \
     core.h \
     core/concurrent_queue.h \
     core/locks.h \
-    core/stack_allocator.h \
+    core/system.h \
     ultra.h \
     ultra_global.h
 
@@ -69,7 +72,7 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
-    core/stack_allocator.cpp \
+    core/system.cpp \
     ultra.cpp
 
 

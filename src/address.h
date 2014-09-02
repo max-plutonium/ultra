@@ -1,11 +1,12 @@
 #ifndef ADDRESS_H
 #define ADDRESS_H
 
+#include <initializer_list>
 #include "ultra_global.h"
 
-namespace ultra ULTRA_EXPORT
+namespace ultra
 {
-    struct ULTRA_EXPORT address
+    struct address
     {
         constexpr address() noexcept : _x(0), _y(0), _z(0)
         { }
@@ -33,7 +34,7 @@ namespace ultra ULTRA_EXPORT
     };
 
 
-    struct ULTRA_EXPORT address_hash
+    struct address_hash
     {
         std::size_t operator()(const address &c) const;
     };
