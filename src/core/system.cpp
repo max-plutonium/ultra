@@ -10,15 +10,52 @@
 #include <algorithm> // std::min, std::max
 #include <csetjmp>
 
-#ifdef __unix__
+#if defined __unix__
 #   include <unistd.h>          // sysconf
 #   include <sys/resource.h>    // rlimit
 #   include <signal.h>          // MINSIGSTKSZ
 #   include <fcntl.h>           // open, close
 #   include <sys/mman.h>        // mmap, munmap, mprotect
 
+#   if defined __x86_64__
+#       define context_trampoline(stackptr, argptr, retptr, funptr) \
+            asm volatile( \
+                "mov %0, %%rsp \n" \
+                "mov %%rsp, %%rbp \n" \
+                "sub $0x10, %%rsp \n" \
+                "mov %1, %%rdi \n" \
+                "mov %2, 0x8(%%rsp) \n" \
+                "mov %3, (%%rsp) \n" \
+                "ret \n" \
+                :: "rm"(reinterpret_cast<void *>(stackptr)) \
+                , "rm"(reinterpret_cast<void *>(argptr)) \
+                , "rm"(reinterpret_cast<void *>(retptr)) \
+                , "rm"(reinterpret_cast<void *>(funptr)) \
+                : "%rsp", "%rdi");
+#   endif
+
 #elif defined __windows__
 #   include <windows.h>
+
+#   if defined __MINGW32__
+#       define context_trampoline(stackptr, argptr, retptr, funptr) \
+            asm volatile( \
+                "mov %0, %%esp \n" \
+                "mov %%esp, %%ebp \n" \
+                "sub $0xc, %%esp \n" \
+                "mov %1, 0x8(%%esp) \n" \
+                "mov %2, 0x4(%%esp) \n" \
+                "mov %3, (%%esp) \n" \
+                "ret \n" \
+                :: "rm"(reinterpret_cast<void *>(stackptr)) \
+                , "rm"(reinterpret_cast<void *>(argptr)) \
+                , "rm"(reinterpret_cast<void *>(retptr)) \
+                , "rm"(reinterpret_cast<void *>(funptr)) \
+                : "%esp");
+#   endif
+
+#else
+#   error "platform not supported"
 
 #endif
 
@@ -121,34 +158,7 @@ system::make_context(const stack &astack, std::function<void (void *)> func)
         return std::move(ci._cloning_context);
     }
 
-#if defined __x86_64__
-    asm volatile(
-        "mov %0, %%rsp \n"
-        "mov %%rsp, %%rbp \n"
-        "sub $0x10, %%rsp \n"
-        "mov %1, %%rdi \n"
-        "mov %2, 0x8(%%rsp) \n"
-        "mov %3, (%%rsp) \n"
-        "ret \n"
-        :: "rm"(astack.second), "rm"(reinterpret_cast<void *>(&ci))
-        , "rm"(nullptr), "rm"(&ultra_context)
-        : "%rsp", "%rdi");
-
-#elif defined __MINGW32__
-    asm volatile(
-        "mov %0, %%esp \n"
-        "mov %%esp, %%ebp \n"
-        "sub $0xc, %%esp \n"
-        "mov %1, 0x8(%%esp) \n"
-        "mov %2, 0x4(%%esp) \n"
-        "mov %3, (%%esp) \n"
-        "ret \n"
-        :: "rm"(astack.second), "rm"(reinterpret_cast<void *>(&ci))
-        , "rm"(&fini_context), "rm"(&ultra_context)
-        : "%esp");
-#else
-#   error "platform not supported"
-#endif
+    context_trampoline(astack.second, &ci, NULL, &ultra_context);
     __builtin_unreachable();
 }
 
