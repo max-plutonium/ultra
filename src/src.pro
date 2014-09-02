@@ -11,8 +11,8 @@ TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
-load(ultra_cds)
-load(ultra_boost)
+#load(ultra_cds)
+#load(ultra_boost)
 
 
 ### Building settings ###
