@@ -53,4 +53,5 @@ TEST_F(test_system, context_switch)
     ASSERT_EQ((void *)0x666, vvv);
 
     test_instance = nullptr;
+    system::deallocate_stack(s);
 }

@@ -42,8 +42,6 @@ extern "C" void ultra_context(void *arg)
     func(system::switch_context(ci._cloning_context, ci._cloned_context));
 }
 
-extern "C" void fini_context() { }
-
 namespace ultra { namespace core {
 
 struct machine_context_sjlj : system::machine_context
@@ -123,15 +121,28 @@ system::make_context(const stack &astack, std::function<void (void *)> func)
         return std::move(ci._cloning_context);
     }
 
-#ifdef __MINGW32__
+#if defined __x86_64__
     asm volatile(
-        "movl %0, %%esp \n"
-        "movl %%esp, %%ebp \n"
-        "subl $0xc, %%esp \n"
-        "movl %1, 0x8(%%esp) \n"
-        "movl %2, 0x4(%%esp) \n"
-        "movl %3, (%%esp) \n"
-        "retl \n"
+        "mov %0, %%rsp \n"
+        "mov %%rsp, %%rbp \n"
+        "sub $0x10, %%rsp \n"
+        "mov %1, %%rdi \n"
+        "mov %2, 0x8(%%rsp) \n"
+        "mov %3, (%%rsp) \n"
+        "ret \n"
+        :: "rm"(astack.second), "rm"(reinterpret_cast<void *>(&ci))
+        , "rm"(nullptr), "rm"(&ultra_context)
+        : "%rsp", "%rdi");
+
+#elif defined __MINGW32__
+    asm volatile(
+        "mov %0, %%esp \n"
+        "mov %%esp, %%ebp \n"
+        "sub $0xc, %%esp \n"
+        "mov %1, 0x8(%%esp) \n"
+        "mov %2, 0x4(%%esp) \n"
+        "mov %3, (%%esp) \n"
+        "ret \n"
         :: "rm"(astack.second), "rm"(reinterpret_cast<void *>(&ci))
         , "rm"(&fini_context), "rm"(&ultra_context)
         : "%esp");
