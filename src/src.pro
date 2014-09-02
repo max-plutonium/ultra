@@ -62,6 +62,7 @@ HEADERS += \
     core/concurrent_queue.h \
     core/locks.h \
     core/thread_pool.h \
+    task.h \
     ultra.h \
     ultra_global.h
 
@@ -73,6 +74,7 @@ SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
     core/thread_pool.cpp \
+    task.cpp \
     ultra.cpp
 
 
