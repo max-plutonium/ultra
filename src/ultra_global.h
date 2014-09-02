@@ -27,6 +27,8 @@
 
 #include <cstdint>
 
+namespace ultra {
+
 template <std::size_t... Indices>
   struct tuple_indices {
       typedef tuple_indices<Indices..., sizeof... (Indices)> next;
@@ -41,6 +43,8 @@ template <>
   struct tuple_indices_builder<0> {
       typedef tuple_indices<> type;
   };
+
+} // namespace ultra
 
 #include <bits/move.h> // std::addressof
 
