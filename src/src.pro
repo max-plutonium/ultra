@@ -77,7 +77,6 @@ SOURCES += \
     task.cpp \
     ultra.cpp
 
-
 ### Install settings ###
 
 headerTarget.path = ../include
