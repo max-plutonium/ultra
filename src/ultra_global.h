@@ -25,6 +25,23 @@
 #   define ULTRA_UNLIKELY(V)
 #endif
 
+#include <cstdint>
+
+template <std::size_t... Indices>
+  struct tuple_indices {
+      typedef tuple_indices<Indices..., sizeof... (Indices)> next;
+  };
+
+template <std::size_t N>
+  struct tuple_indices_builder {
+      typedef typename tuple_indices_builder<N - 1>::type::next type;
+  };
+
+template <>
+  struct tuple_indices_builder<0> {
+      typedef tuple_indices<> type;
+  };
+
 #include <bits/move.h> // std::addressof
 
 template <typename Tp>
