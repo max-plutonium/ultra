@@ -58,6 +58,7 @@ HEADERS += \
     core.h \
     core/concurrent_queue.h \
     core/locks.h \
+    core/thread_pool.h \
     ultra.h \
     ultra_global.h
 
@@ -68,6 +69,7 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
+    core/thread_pool.cpp \
     ultra.cpp
 
 
