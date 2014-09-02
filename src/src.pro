@@ -11,7 +11,7 @@ TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
-load(ultra_cds)
+#load(ultra_cds)
 load(ultra_boost)
 
 
@@ -47,7 +47,10 @@ CONFIG(debug, debug|release) {
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
-    win32*: LIBS += -lpthread
+    win32 {
+        LIBS += -lpthread
+        DEFINES += _GLIBCXX_HAS_GTHREADS
+    }
 }
 
 

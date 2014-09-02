@@ -2,6 +2,7 @@
 #define THREAD_POOL_H
 
 #include <atomic>
+#include <mutex>
 #include <memory>
 #include <list>
 #include <thread>

@@ -5,4 +5,4 @@ INCLUDEPATH += $$GTEST_PATH
 
 SOURCES += $$GTEST_PATH/gmock-gtest-all.cc
 
-LIBS += -lrt -lgomp
+LIBS += -lgomp
