@@ -38,9 +38,9 @@ void thread_pool::async_schedule(task_ptr &ptask)
     std::size_t yield_count = 10;
     while(!_exiting.load(std::memory_order_relaxed)) {
         if(!ptask) {
-            if(_deferred_tasks && !_deferred_tasks.empty()) {
-                ptask = std::move(_deferred_tasks.top());
-                _deferred_tasks.pop();
+            if(_deferred_tasks && !_deferred_tasks->empty()) {
+                ptask = std::move(_deferred_tasks->top());
+                _deferred_tasks->pop();
             }
         }
 
