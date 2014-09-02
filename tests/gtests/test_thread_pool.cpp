@@ -10,7 +10,7 @@ public:
     MOCK_METHOD0(run, void());
 };
 
-TEST(test_thread_pool, run_async_simple)
+TEST(test_thread_pool, schedule_simple)
 {
     using namespace ultra;
     mock_task *mt = new mock_task;
@@ -19,7 +19,8 @@ TEST(test_thread_pool, run_async_simple)
     EXPECT_CALL(*mt, run()).Times(1);
 
     core::thread_pool pool;
-    pool.run_async(std::move(ptask));
+    pool.schedule(std::move(ptask));
+    pool.wait_for_done();
 }
 
 std::string fff(std::string &r) {
@@ -27,13 +28,13 @@ std::string fff(std::string &r) {
     return r.append("123");
 }
 
-TEST(test_thread_pool, run_async_for_callable)
+TEST(test_thread_pool, schedule_callable)
 {
     using namespace ultra;
 
     core::thread_pool pool;
     std::string rr = "9";
-    auto fut = pool.run_async(fff, rr);
+    auto fut = pool.schedule(fff, rr);
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     std::string r = fut.get();
     r.at(1);
