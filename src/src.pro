@@ -46,7 +46,7 @@ CONFIG(debug, debug|release) {
         -std=c++1y -pthread -funwind-tables \
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
-    QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
+    QMAKE_CXXFLAGS_RELEASE += -fno-omit-frame-pointer #-fvisibility=hidden -fvisibility-inlines-hidden
     win32 {
         LIBS += -lpthread
         DEFINES += _GLIBCXX_HAS_GTHREADS
