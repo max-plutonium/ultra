@@ -75,7 +75,6 @@ SOURCES += \
     core/system.cpp \
     ultra.cpp
 
-
 ### Install settings ###
 
 headerTarget.path = ../include

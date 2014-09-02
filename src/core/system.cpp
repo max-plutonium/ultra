@@ -18,40 +18,95 @@
 #   include <sys/mman.h>        // mmap, munmap, mprotect
 
 #   if defined __x86_64__
-#       define context_trampoline(stackptr, argptr, retptr, funptr) \
-            asm volatile( \
-                "movq %0, %%rsp \n" \
-                "movq %%rsp, %%rbp \n" \
-                "subq $0x10, %%rsp \n" \
-                "movq %1, %%rdi \n" \
-                "movq %2, 0x8(%%rsp) \n" \
-                "movq %3, (%%rsp) \n" \
-                "retq \n" \
-                :: "r"(reinterpret_cast<void *>(stackptr)) \
-                , "r"(reinterpret_cast<void *>(argptr)) \
-                , "r"(reinterpret_cast<void *>(retptr)) \
-                , "r"(reinterpret_cast<void *>(funptr)) \
-                : "%rsp", "%rdi");
 #   endif
 
 #elif defined __windows__
 #   include <windows.h>
 
 #   if defined __MINGW32__
-#       define context_trampoline(stackptr, argptr, retptr, funptr) \
+#       define init_context_native(ctx_ptr, sp, ip) \
             asm volatile( \
-                "mov %0, %%esp \n" \
-                "mov %%esp, %%ebp \n" \
-                "sub $0xc, %%esp \n" \
-                "mov %1, 0x8(%%esp) \n" \
-                "mov %2, 0x4(%%esp) \n" \
-                "mov %3, (%%esp) \n" \
-                "ret \n" \
-                :: "rm"(reinterpret_cast<void *>(stackptr)) \
-                , "rm"(reinterpret_cast<void *>(argptr)) \
-                , "rm"(reinterpret_cast<void *>(retptr)) \
-                , "rm"(reinterpret_cast<void *>(funptr)) \
-                : "%esp");
+                /* load address of the context structure */ \
+                "movl %0, %%ecx \n" \
+                \
+                /* reserve space for context data in new stack */ \
+                "leal -0x20(%1), %%edx \n" \
+                \
+                /* init registers */ \
+                "movl $0x0, 0x14(%%edx) \n" \
+                "movl $0x0, 0x10(%%edx) \n" \
+                "movl $0x0, 0xc(%%edx) \n" \
+                "movl $0x0, 0x8(%%edx) \n" \
+                \
+                /* push eflags and save them */ \
+                "pushfl \n" \
+                "popl 0x4(%%edx) \n" \
+                \
+                /* save address of data as argument for context function */ \
+                "leal -0x4(%1), %%eax \n" \
+                "movl %%eax, 0x0(%%edx) \n" \
+                \
+                /* save esp and eip */ \
+                "movl %%edx, 0x4(%%ecx) \n" \
+                "movl %2, 0x0(%%ecx) \n" \
+                \
+                :: "r"(static_cast<system::machine_context *>(ctx_ptr)) \
+                , "r"(reinterpret_cast<void *>(sp)) \
+                , "r"(reinterpret_cast<void *>(ip)) \
+                : "%eax", "%ecx", "%edx", "memory");
+
+#       define switch_context_native(ctx_from, ctx_to, arg) \
+            asm volatile( \
+                /* load address of the context-from structure */ \
+                "movl %0, %%ecx \n" \
+                \
+                /* save registers */ \
+                "pushl %%ebx \n" \
+                "pushl %%edi \n" \
+                "pushl %%esi \n" \
+                "pushl %%ebp \n" \
+                \
+                /* push eflags and save them */ \
+                "pushfl \n" \
+                \
+                /* save address for place return value after jump */ \
+                "pushl %2 \n" \
+                "movl (%2), %%eax \n" \
+                \
+                /* save esp */ \
+                "movl %%esp, 0x4(%%ecx) \n" \
+                \
+                /* get return address and save it as eip */ \
+                "movl $resumed, 0x0(%%ecx) \n" \
+                \
+                /* load address of the context-to structure */ \
+                "movl %1, %%ecx \n" \
+                \
+                /* restore esp */ \
+                "movl 0x4(%%ecx), %%esp \n" \
+                \
+                /* restore address for place return value after jump */ \
+                "popl %%edx \n" \
+                "movl %%eax, (%%edx) \n" \
+                \
+                /* push saved eflags and restore them */ \
+                "popfl \n" \
+                \
+                /* restore registers */ \
+                "popl %%ebp \n" \
+                "popl %%esi \n" \
+                "popl %%edi \n" \
+                "popl %%ebx \n" \
+                \
+                /* jump to saved eip */ \
+                "jmp *0x0(%%ecx) \n" \
+                "resumed: \n" \
+                \
+            :: "r"(static_cast<system::machine_context *>(ctx_from)) \
+            , "r"(static_cast<const system::machine_context *>(ctx_to)) \
+            , "r"(static_cast<std::intptr_t *>(arg)) \
+            : "%eax", "%ecx", "%edx", "memory");
+
 #   endif
 
 #else
@@ -60,35 +115,6 @@
 #endif
 
 namespace ultra { namespace core {
-
-struct context_info
-{
-    system::machine_context_ptr _cloned_context, _cloning_context;
-    std::function<void (void *)> &_func;
-};
-
-} // namespace core
-
-} // namespace ultra
-
-extern "C" void ultra_context(void *arg)
-{
-    using namespace ultra::core;
-    context_info &ci = *reinterpret_cast<context_info *>(arg);
-    std::function<void (void *)> func { ci._func };
-    func(system::switch_context(ci._cloning_context, ci._cloned_context));
-}
-
-namespace ultra { namespace core {
-
-struct machine_context_sjlj : system::machine_context
-{
-    static thread_local void *_data;
-    jmp_buf _cxt;
-};
-
-/*static*/ thread_local
-void *machine_context_sjlj::_data = nullptr;
 
 #ifdef __windows__
 static SYSTEM_INFO get_system_info_helper()
@@ -126,54 +152,17 @@ std::size_t system::get_pagecount(std::size_t memsize)
 }
 
 /*static*/
-bool system::save_context(machine_context_ptr &ctx)
+void
+system::init_context(machine_context &ctx, const stack &astack, void (*func)(std::intptr_t))
 {
-    if(!ctx)
-        ctx = std::make_shared<machine_context_sjlj>();
-
-    auto *pctx = dynamic_cast<machine_context_sjlj *>(ctx.get());
-    assert(pctx);
-
-    return 0 == setjmp(pctx->_cxt);
+    init_context_native(&ctx, astack.second, func);
 }
 
 /*static*/
-void system::restore_context(const system::machine_context_ptr &ctx)
+std::intptr_t system::switch_context(machine_context &from,
+                                     const machine_context &to, std::intptr_t data)
 {
-    auto *pctx = dynamic_cast<machine_context_sjlj *>(ctx.get());
-    assert(pctx);
-
-    longjmp(pctx->_cxt, 1);
-    __builtin_unreachable();
-}
-
-/*static*/
-system::machine_context_ptr
-system::make_context(const stack &astack, std::function<void (void *)> func)
-{
-    context_info ci { nullptr, nullptr, func };
-    ci._cloned_context = std::make_shared<machine_context_sjlj>();
-    if(setjmp(static_cast<machine_context_sjlj *>(ci._cloned_context.get())->_cxt)) {
-        ci._cloned_context.reset();
-        return std::move(ci._cloning_context);
-    }
-
-    context_trampoline(astack.second, &ci, NULL, &ultra_context);
-    __builtin_unreachable();
-}
-
-/*static*/
-void *system::switch_context(system::machine_context_ptr &from,
-                             const system::machine_context_ptr &to, void *data)
-{
-    if(save_context(from)) {
-        machine_context_sjlj::_data = data;
-        restore_context(to);
-        __builtin_unreachable();
-    }
-
-    data = machine_context_sjlj::_data;
-    machine_context_sjlj::_data = nullptr;
+    switch_context_native(&from, &to, &data);
     return data;
 }
 

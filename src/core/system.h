@@ -12,22 +12,13 @@ public:
     static std::size_t get_pagesize();
     static std::size_t get_pagecount(std::size_t memsize);
 
-    struct machine_context : std::enable_shared_from_this<machine_context>
-    {
-        virtual ~machine_context() = default;
-    };
-
+    using machine_context = void *[2];
     using stack = std::pair<std::size_t, void *>;
-    using machine_context_ptr = std::shared_ptr<machine_context>;
 
-    static bool save_context(machine_context_ptr &ctx);
-    static void __attribute__((nothrow, noreturn))
-    restore_context(const machine_context_ptr &ctx);
-
-    static machine_context_ptr make_context(
-            const stack &astack, std::function<void (void *)> func);
-    static void *switch_context(machine_context_ptr &from,
-            const machine_context_ptr &to, void *data = nullptr);
+    static void init_context(machine_context &ctx,
+            const stack &astack, void (*func)(std::intptr_t));
+    static std::intptr_t switch_context(machine_context &from,
+            const machine_context &to, std::intptr_t data = 0);
 
     static bool is_stack_unbound();
     static std::size_t default_stacksize();
@@ -35,7 +26,6 @@ public:
     static std::size_t maximum_stacksize();
     static stack allocate_stack(std::size_t stack_size);
     static void deallocate_stack(stack &);
-
 };
 
 } // namespace core
