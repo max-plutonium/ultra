@@ -18,6 +18,85 @@
 #   include <sys/mman.h>        // mmap, munmap, mprotect
 
 #   if defined __x86_64__
+#       define make_context_native(ctx_ptr, sp, ip) \
+            asm volatile( \
+                "leaq -0x20(%1), %%rdx \n" \
+                "movq $0x0, 0x8(%%rdx) \n" \
+                "movq %2, 0x10(%%rdx) \n" \
+                "movq %%rdx, 0x18(%%rdx) \n" \
+                "leaq context_trampoline(%%rip), %%rax \n" \
+                "movq %%rax, (%%rdx) \n" \
+                "jmp 1f \n" \
+                \
+                "context_trampoline: \n" \
+                "movq %%rax, %%rdi \n" \
+                "jmpq *0x0(%%rcx) \n" \
+                \
+                "1: addq $0x10, %%rdx \n" \
+                "movq %%rdx, (%0) \n" \
+                \
+                :: "g"(static_cast<system::machine_context **>(ctx_ptr)) \
+                , "g"(reinterpret_cast<void *>(sp)) \
+                , "r"(reinterpret_cast<void *>(ip)) \
+                : "%rdx", "%rax", "memory");
+
+#       define switch_context_native(ctx_from, ctx_to, arg) \
+            asm volatile( \
+                "leaq -0x18(%%rsp), %%rsp \n" \
+                \
+                /* save registers and rflags */ \
+                "pushq %%rbp \n" \
+                "pushq %%rbx \n" \
+                "pushq %%r15 \n" \
+                "pushq %%r14 \n" \
+                "pushq %%r13 \n" \
+                "pushq %%r12 \n" \
+                "pushfq \n" \
+                \
+                /* save address of return value after jump */ \
+                "pushq %2 \n" \
+                "movq (%2), %%rax \n" \
+                \
+                /* load address of the context-from structure */ \
+                "movq %0, %%rcx \n" \
+                \
+                /* save return address */ \
+                "leaq resume_context(%%rip), %%rbx \n" \
+                "pushq %%rbx \n" \
+                \
+                /* save rsp */ \
+                "movq %%rsp, 0x8(%%rcx) \n" \
+                \
+                /* load address of the context-to structure */ \
+                "movq %1, %%rcx \n" \
+                \
+                /* restore rsp */ \
+                "movq 0x8(%%rcx), %%rsp \n" \
+                \
+                /* jump to saved rip */ \
+                "retq \n" \
+                \
+                "resume_context: \n" \
+                \
+                /* restore address of return value after jump */ \
+                "popq %%rbx \n" \
+                "movq %%rax, (%%rbx) \n" \
+                \
+                /* restore rflags and registers */ \
+                "popfq \n" \
+                "popq %%r12 \n" \
+                "popq %%r13 \n" \
+                "popq %%r14 \n" \
+                "popq %%r15 \n" \
+                "popq %%rbx \n" \
+                "popq %%rbp \n" \
+                \
+                "leaq 0x18(%%rsp), %%rsp \n" \
+                \
+            :: "g"(static_cast<system::machine_context *>(ctx_from)) \
+            , "g"(static_cast<const system::machine_context *>(ctx_to)) \
+            , "g"(static_cast<std::intptr_t *>(arg)) \
+            : "%rax", "%rcx", "memory");
 #   endif
 
 #elif defined __windows__
@@ -89,7 +168,7 @@
                 "popl %%edx \n" \
                 "movl %%eax, (%%edx) \n" \
                 \
-                /* push saved eflags and restore them */ \
+                /* restore saved eflags */ \
                 "popfl \n" \
                 \
                 /* restore registers */ \
@@ -152,15 +231,17 @@ std::size_t system::get_pagecount(std::size_t memsize)
 }
 
 /*static*/
-void
-system::init_context(machine_context &ctx, const stack &astack, void (*func)(std::intptr_t))
+system::machine_context *
+system::make_context(const stack &astack, void (*func)(std::intptr_t))
 {
-    init_context_native(&ctx, astack.second, func);
+    machine_context *ret;
+    make_context_native(&ret, astack.second, func);
+    return ret;
 }
 
 /*static*/
 std::intptr_t system::switch_context(machine_context &from,
-                                     const machine_context &to, std::intptr_t data)
+                        const machine_context &to, std::intptr_t data)
 {
     switch_context_native(&from, &to, &data);
     return data;

@@ -15,10 +15,12 @@ public:
     using machine_context = void *[2];
     using stack = std::pair<std::size_t, void *>;
 
-    static void init_context(machine_context &ctx,
-            const stack &astack, void (*func)(std::intptr_t));
-    static std::intptr_t switch_context(machine_context &from,
-            const machine_context &to, std::intptr_t data = 0);
+    static machine_context *
+    make_context(const stack &astack, void (*func)(std::intptr_t));
+
+    static std::intptr_t
+    switch_context(machine_context &from,
+        const machine_context &to, std::intptr_t data = 0);
 
     static bool is_stack_unbound();
     static std::size_t default_stacksize();
