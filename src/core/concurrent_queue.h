@@ -1,9 +1,9 @@
 #ifndef CONCURRENT_QUEUE_H
 #define CONCURRENT_QUEUE_H
 
+#include "locks.h"
 #include <memory>
 #include <type_traits>
-#include "locks.h"
 
 namespace ultra { namespace core {
 
@@ -32,7 +32,7 @@ namespace detail {
         {
             node  *next = nullptr, *last = nullptr;
 
-            queue_impl() : node_alloc_type() {}
+            queue_impl() : node_alloc_type() { }
             queue_impl(const node_alloc_type &a) : node_alloc_type(a) { }
             queue_impl(node_alloc_type &&a) : node_alloc_type(std::move(a)) { }
 
