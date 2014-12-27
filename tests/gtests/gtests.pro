@@ -51,4 +51,5 @@ SOURCES += \
     test_address.cpp \
     test_concurrent_queue.cpp \
     test_ordered_lock.cpp \
-    test_thread_pool.cpp
+    test_thread_pool.cpp \
+    test_schedulers.cpp

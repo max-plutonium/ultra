@@ -64,7 +64,9 @@ HEADERS += \
     core/thread_pool.h \
     task.h \
     ultra.h \
-    ultra_global.h
+    ultra_global.h \
+    core/schedulers.h \
+    core/future.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -75,7 +77,9 @@ SOURCES += \
     core/concurrent_queue.tpp \
     core/thread_pool.cpp \
     task.cpp \
-    ultra.cpp
+    ultra.cpp \
+    core/schedulers.cpp \
+    core/future.cpp
 
 ### Install settings ###
 

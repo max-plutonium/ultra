@@ -5,15 +5,15 @@
 #include <bits/move.h> // std::addressof
 
 #ifdef ULTRA_SHARED
-#  define ULTRA_EXPORT Q_DECL_EXPORT
+#  define ULTRA_EXPORT __attribute__((visibility("default")))
 #else
-#  define ULTRA_EXPORT Q_DECL_IMPORT
+#  define ULTRA_EXPORT __attribute__((visibility("default")))
 #endif
 
 #ifdef QT_DEBUG
-#   define ULTRA_PRIVATE Q_DECL_IMPORT
+#   define ULTRA_PRIVATE __attribute__((visibility("default")))
 #else
-#   define ULTRA_PRIVATE Q_DECL_HIDDEN
+#   define ULTRA_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
 namespace ultra {

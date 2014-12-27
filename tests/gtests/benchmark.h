@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace detail {
+namespace details {
 
 #include <stdlib.h>
 #include <time.h>
@@ -45,10 +45,10 @@ public:
     bool is_done();
 };
 
-} // namespace detail
+} // namespace details
 
 #define benchmark(name, iterations) \
-        for(detail::benchmark_controller __benchmark(name, iterations); \
+        for(details::benchmark_controller __benchmark(name, iterations); \
             !__benchmark.is_done();)
 
 #endif // BENCHMARK_H

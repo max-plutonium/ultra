@@ -10,15 +10,11 @@ namespace ultra { namespace core {
 struct scheduler
 {
     virtual void push(task_ptr) = 0;
-    virtual task_ptr schedule(std::chrono::milliseconds) = 0;
+    virtual task_ptr schedule(std::chrono::milliseconds =
+            std::chrono::milliseconds(0)) = 0;
     virtual std::size_t size() const = 0;
     virtual bool empty() const = 0;
     virtual void clear() = 0;
-};
-
-struct executor
-{
-    virtual void execute(task_ptr) = 0;
 };
 
 class fifo_scheduler : public scheduler
@@ -31,7 +27,8 @@ class fifo_scheduler : public scheduler
     // scheduler interface
 public:
     virtual void push(task_ptr) override;
-    virtual task_ptr schedule(std::chrono::milliseconds) override;
+    virtual task_ptr schedule(std::chrono::milliseconds =
+            std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;
     virtual bool empty() const override;
     virtual void clear() override;
@@ -47,7 +44,8 @@ class lifo_scheduler : public scheduler
     // scheduler interface
 public:
     virtual void push(task_ptr) override;
-    virtual task_ptr schedule(std::chrono::milliseconds) override;
+    virtual task_ptr schedule(std::chrono::milliseconds =
+            std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;
     virtual bool empty() const override;
     virtual void clear() override;
@@ -65,7 +63,8 @@ class prio_scheduler : public scheduler
     // scheduler interface
 public:
     virtual void push(task_ptr) override;
-    virtual task_ptr schedule(std::chrono::milliseconds) override;
+    virtual task_ptr schedule(std::chrono::milliseconds =
+            std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;
     virtual bool empty() const override;
     virtual void clear() override;
@@ -74,6 +73,5 @@ public:
 } // namespace core
 
 } // namespace ultra
-
 
 #endif // SCHEDULERS_H

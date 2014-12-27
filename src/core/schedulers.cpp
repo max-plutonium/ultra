@@ -16,14 +16,12 @@ void fifo_scheduler::push(task_ptr t)
 
 task_ptr fifo_scheduler::schedule(std::chrono::milliseconds msecs)
 {
-    task_ptr ret; bool hasTask = true;
+    task_ptr ret;
 
     std::unique_lock<decltype(_lock)> lk(_lock);
-    if(!_tasks.empty()) {
-        ++_nr_contenders;
-        while(hasTask = _cond.wait_for(lk, msecs));
-        --_nr_contenders;
-    }
+    ++_nr_contenders;
+    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    --_nr_contenders;
 
     if(hasTask) {
         ret = _tasks.front();
@@ -67,14 +65,12 @@ void lifo_scheduler::push(task_ptr t)
 
 task_ptr lifo_scheduler::schedule(std::chrono::milliseconds msecs)
 {
-    task_ptr ret; bool hasTask = true;
+    task_ptr ret;
 
     std::unique_lock<decltype(_lock)> lk(_lock);
-    if(!_tasks.empty()) {
-        ++_nr_contenders;
-        while(hasTask = _cond.wait_for(lk, msecs));
-        --_nr_contenders;
-    }
+    ++_nr_contenders;
+    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    --_nr_contenders;
 
     if(hasTask) {
         ret = _tasks.front();
@@ -118,14 +114,12 @@ void prio_scheduler::push(task_ptr t)
 
 task_ptr prio_scheduler::schedule(std::chrono::milliseconds msecs)
 {
-    task_ptr ret; bool hasTask = true;
+    task_ptr ret;
 
     std::unique_lock<decltype(_lock)> lk(_lock);
-    if(!_tasks.empty()) {
-        ++_nr_contenders;
-        while(hasTask = _cond.wait_for(lk, msecs));
-        --_nr_contenders;
-    }
+    ++_nr_contenders;
+    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    --_nr_contenders;
 
     if(hasTask) {
         ret = _tasks.top();

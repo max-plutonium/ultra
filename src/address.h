@@ -2,34 +2,28 @@
 #define ADDRESS_H
 
 #include "ultra_global.h"
+#include <initializer_list>
 
 namespace ultra ULTRA_EXPORT
 {
     struct ULTRA_EXPORT address
     {
-        constexpr address() noexcept : _x(0), _y(0), _z(0)
-        { }
+        constexpr address() noexcept = default;
+        address(int ax, int ay, int az) noexcept;
+        address(const std::initializer_list<int> &il);
 
-        address(int ax, int ay, int az) noexcept : _x(ax), _y(ay), _z(az)
-        { }
+        bool operator==(const address &o) const;
+        bool operator!=(const address &o) const;
 
-        address(const std::initializer_list<int> &il)
-            : _x(il.begin()[0]), _y(il.begin()[1]), _z(il.begin()[2])
-        { }
-
-        bool operator==(const address &o) const
-        { return (_x == o._x && _y == o._y && _z == o._z); }
-        bool operator!=(const address &o) const { return !operator==(o); }
-
-        int x() const { return _x; }
-        int y() const { return _y; }
-        int z() const { return _z; }
-        void set_x(int ax) { _x = ax; }
-        void set_y(int ay) { _y = ay; }
-        void set_z(int az) { _z = az; }
+        inline int x() const { return _x; }
+        inline int y() const { return _y; }
+        inline int z() const { return _z; }
+        inline void set_x(int ax) { _x = ax; }
+        inline void set_y(int ay) { _y = ay; }
+        inline void set_z(int az) { _z = az; }
 
     private:
-        int _x, _y, _z;
+        int _x = 0, _y = 0, _z = 0;
     };
 
 

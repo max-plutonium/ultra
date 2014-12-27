@@ -55,43 +55,42 @@ public:
     }
 
     void run() {
-        while(true) {
-            _status = running;
-            while(_task || _pool->_async_tasks.pop(_task)) {
-                task_ptr t = std::move(_task);
-                try {
-                    t->run();
-                } catch(...) {
-                    // TODO
-                    break;
-                }
-            }
+//        while(true) {
+//            _status = running;
+//            while(_task || _pool->_async_tasks.pop(_task)) {
+//                task_ptr t = std::move(_task);
+//                try {
+//                    t->run();
+//                } catch(...) {
+//                    // TODO
+//                    break;
+//                }
+//            }
 
-            std::unique_lock<std::mutex> lk { _pool->_lock };
-            bool exp = _pool->_too_many_active_threads() || _pool->_shutdown;
+//            std::unique_lock<std::mutex> lk { _pool->_lock };
+//            bool exp = _pool->_too_many_active_threads() || _pool->_shutdown;
 
-            if(!exp) {
-                _status = wait;
-                _pool->_active_threads.erase(_id);
-                _pool->_waiters.push_back(shared_from_this());
-                _id = --_pool->_waiters.end();
-                const std::cv_status waitres = _cond.wait_for(lk, _pool->_expiry_timeout);
-                if(std::cv_status::timeout == waitres)
-                    exp = true;
-                else
-                    exp = !static_cast<bool>(_task);
-            }
+//            if(!exp) {
+//                _status = wait;
+//                _pool->_active_threads.erase(_id);
+//                _pool->_waiters.push_back(shared_from_this());
+//                _id = --_pool->_waiters.end();
+//                const std::cv_status waitres = _cond.wait_for(lk, _pool->_expiry_timeout);
+//                if(std::cv_status::timeout == waitres)
+//                    exp = true;
+//                else
+//                    exp = !static_cast<bool>(_task);
+//            }
 
-            if(exp) {
-                _expire_thread();
-                break;
-            }
+//            if(exp) {
+//                _expire_thread();
+//                break;
+//            }
         }
 
 //        std::unique_lock<std::mutex> lk { _pool->_lock };
 //        _expire_thread();
-        _status = stop;
-    }
+//        _status = stop;
 };
 
 thread_pool::thread_pool()
@@ -129,14 +128,14 @@ void thread_pool::_start_more()
 {
     while(_active_thread_count() < _nr_max_threads) {
         task_ptr ptask;
-        if(!_async_tasks.pop(ptask))
-            break;
+//        if(!_async_tasks.pop(ptask))
+//            break;
         _active_threads.push_back(std::make_shared<worker>(this));
         _active_threads.back()->start(std::move(ptask), --_active_threads.end());
     }
 }
 
-std::chrono::milliseconds thread_pool::get_expiry_timeout() const
+std::chrono::milliseconds thread_pool::expiry_timeout() const
 {
     std::lock_guard<std::mutex> lk { _lock };
     return _expiry_timeout;
@@ -148,7 +147,7 @@ void thread_pool::set_expiry_timeout(std::chrono::milliseconds timeout)
     _expiry_timeout = timeout;
 }
 
-std::size_t thread_pool::get_max_thread_count() const
+std::size_t thread_pool::max_thread_count() const
 {
     std::lock_guard<std::mutex> lk { _lock };
     return _nr_max_threads;
@@ -161,7 +160,7 @@ void thread_pool::set_max_thread_count(std::size_t count)
     _start_more();
 }
 
-std::size_t thread_pool::get_thread_count() const
+std::size_t thread_pool::thread_count() const
 {
     std::lock_guard<std::mutex> lk { _lock };
     return _active_thread_count();

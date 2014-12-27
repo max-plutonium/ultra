@@ -1,13 +1,7 @@
 #include "../../src/core/thread_pool.h"
 #include <gmock/gmock.h>
+#include "mock_types.h"
 #include <chrono>
-
-class mock_task : public ultra::task
-{
-public:
-    explicit mock_task(int prio = 0) : ultra::task(prio) { }
-    MOCK_METHOD0(run, void());
-};
 
 class test_thread_pool : public testing::Test
 {
@@ -56,7 +50,7 @@ TEST_F(test_thread_pool, schedule_function_nosleep)
         pool.schedule(&test_thread_pool::test_function_nosleep, this);
     }
 
-    ASSERT_EQ(1, _function_count);
+    ASSERT_EQ(std::size_t(1), _function_count);
 }
 
 TEST_F(test_thread_pool, schedule_function_multiple)
@@ -70,7 +64,7 @@ TEST_F(test_thread_pool, schedule_function_multiple)
             pool.schedule(&test_thread_pool::test_function_sleep, this, 100);
     }
 
-    EXPECT_EQ(runs, _function_count);
+    EXPECT_EQ(std::size_t(runs), _function_count);
 
     {
         core::thread_pool pool;
@@ -78,7 +72,7 @@ TEST_F(test_thread_pool, schedule_function_multiple)
             pool.schedule(&test_thread_pool::test_function_nosleep, this);
     }
 
-    EXPECT_EQ(runs * 2, _function_count);
+    EXPECT_EQ(std::size_t(runs * 2), _function_count);
 
     {
         core::thread_pool pool;
@@ -97,5 +91,53 @@ TEST_F(test_thread_pool, wait_for_done)
         pool.schedule(&test_thread_pool::test_function_nosleep, this);
     }
 
-    ASSERT_EQ(runs, _function_count);
+    ASSERT_EQ(std::size_t(runs), _function_count);
+}
+
+static std::thread::id recycled_id;
+
+static void thread_recycling_function()
+{
+    recycled_id = std::this_thread::get_id();
+}
+
+TEST_F(test_thread_pool, thread_recycling)
+{
+    using namespace ultra;
+    core::thread_pool pool;
+
+    pool.schedule(thread_recycling_function);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::thread::id thread_id_1 = recycled_id;
+
+    pool.schedule(thread_recycling_function);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::thread::id thread_id_2 = recycled_id;
+    EXPECT_EQ(thread_id_1, thread_id_2);
+
+    pool.schedule(thread_recycling_function);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::thread::id thread_id_3 = recycled_id;
+    EXPECT_EQ(thread_id_2, thread_id_3);
+}
+
+TEST_F(test_thread_pool, expiry_timeout)
+{
+    using namespace ultra;
+    core::thread_pool pool;
+
+    std::chrono::milliseconds expiry_timeout =  pool.expiry_timeout();
+    pool.set_expiry_timeout(std::chrono::milliseconds(10));
+    EXPECT_EQ(std::chrono::milliseconds(10), pool.expiry_timeout());
+
+    pool.schedule(thread_recycling_function);
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    std::thread::id thread_id_1 = recycled_id;
+
+    // Запускаем задачу заново, поток должен перезапуститься
+    pool.schedule(thread_recycling_function);
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    std::thread::id thread_id_2 = recycled_id;
+    EXPECT_EQ(thread_id_1, thread_id_2);
+
 }
