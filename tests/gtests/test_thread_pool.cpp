@@ -23,15 +23,11 @@ TEST(test_thread_pool, schedule_simple)
 
     core::thread_pool<mock_scheduler> pool(1);
 
-    EXPECT_CALL(*static_cast<mock_scheduler *>(pool.sched().get()),
-                schedule(Eq(std::chrono::milliseconds(1))))
-            .WillOnce(Return(task_ptr()));
-
     EXPECT_EQ(std::size_t(0), pool.thread_count());
 
     EXPECT_CALL(*mt, run()).Times(1);
     EXPECT_CALL(*static_cast<mock_scheduler *>(pool.sched().get()),
-                empty()).WillOnce(Return(true));
+                empty()).WillRepeatedly(Return(true));
 
     pool.execute(ptask);
 
@@ -219,6 +215,7 @@ INSTANTIATE_TEST_CASE_P(My, typed_test_thread_pool_max_thread_count,
 struct waiting_task : ultra::task
 {
     sem_t _sem_for_started, _sem_for_finish;
+    std::atomic_size_t _run_count { 0 };
 
     waiting_task() {
         sem_init(&_sem_for_started, 0, 0);
@@ -234,6 +231,7 @@ struct waiting_task : ultra::task
 public:
     virtual void run()
     {
+        _run_count.fetch_add(1);
         sem_post(&_sem_for_started);
         sem_wait(&_sem_for_finish);
     }
@@ -363,4 +361,26 @@ TEST_P(typed_test_thread_pool_reserve_thread, release_thread)
     EXPECT_EQ(std::size_t(-1), pool.thread_count());
     pool.reserve_thread();
     EXPECT_EQ(std::size_t(0), pool.thread_count());
+}
+
+TYPED_TEST(typed_test_thread_pool, reserve_and_start)
+{
+    TestFixture::pool.set_max_thread_count(1);
+    EXPECT_EQ(0, TestFixture::pool.thread_count());
+
+    TestFixture::pool.reserve_thread();
+    EXPECT_EQ(1, TestFixture::pool.thread_count());
+
+    std::shared_ptr<waiting_task> task = std::make_shared<waiting_task>();
+
+    TestFixture::pool.execute(task);
+    EXPECT_EQ(2, TestFixture::pool.thread_count());
+    sem_wait(&task->_sem_for_started);
+    sem_post(&task->_sem_for_finish);
+    EXPECT_EQ(1, task->_run_count);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    EXPECT_EQ(1, TestFixture::pool.thread_count());
+
+    TestFixture::pool.release_thread();
+    EXPECT_EQ(0, TestFixture::pool.thread_count());
 }
