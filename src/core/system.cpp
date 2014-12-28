@@ -329,13 +329,15 @@ asm volatile(
 
 #endif
 
+#include "ultra_global.h"
+
 
 namespace ultra { namespace core {
 
-extern "C" machine_context *
+extern "C" ULTRA_PRIVATE machine_context *
 __make_context(void *sp, context_entry ip);
 
-extern "C" std::intptr_t
+extern "C" ULTRA_PRIVATE std::intptr_t
 __switch_context(machine_context *, machine_context *, std::intptr_t);
 
 static thread_local machine_context *t_current_context;
@@ -386,17 +388,12 @@ system::make_context(const machine_stack &astack,
     return ret;
 }
 
-extern "C" std::intptr_t
+extern "C" ULTRA_PRIVATE std::intptr_t
 switch_context(machine_context *from, machine_context *to, std::intptr_t data)
 {
     t_current_context = to;
     return __switch_context(from, to, data);
 }
-
-/*static*/
-std::intptr_t __attribute__((alias("switch_context")))
-system::switch_context(machine_context *from,
-                       machine_context *to, std::intptr_t data);
 
 /*static*/
 bool system::inside_context()

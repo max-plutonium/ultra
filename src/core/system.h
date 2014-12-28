@@ -20,10 +20,6 @@ public:
     make_context(const machine_stack &astack,
         context_entry entry, machine_context *parent = nullptr);
 
-    static std::intptr_t
-    switch_context(machine_context *from,
-        machine_context *to, std::intptr_t data = 0);
-
     static bool inside_context();
     static machine_context *current_context();
 
