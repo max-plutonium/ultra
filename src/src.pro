@@ -66,7 +66,8 @@ HEADERS += \
     ultra.h \
     ultra_global.h \
     core/schedulers.h \
-    core/future.h
+    core/future.h \
+    core/result.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -79,7 +80,8 @@ SOURCES += \
     task.cpp \
     ultra.cpp \
     core/schedulers.cpp \
-    core/future.cpp
+    core/future.cpp \
+    core/result.cpp
 
 ### Install settings ###
 

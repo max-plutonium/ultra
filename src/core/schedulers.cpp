@@ -20,10 +20,11 @@ task_ptr fifo_scheduler::schedule(std::chrono::milliseconds msecs)
 
     std::unique_lock<decltype(_lock)> lk(_lock);
     ++_nr_contenders;
-    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    _cond.wait_for(lk, msecs, [this]()
+        { return !_tasks.empty() || !stopped; });
     --_nr_contenders;
 
-    if(hasTask) {
+    if(!_tasks.empty()) {
         ret = _tasks.front();
         _tasks.pop_front();
     }
@@ -69,10 +70,11 @@ task_ptr lifo_scheduler::schedule(std::chrono::milliseconds msecs)
 
     std::unique_lock<decltype(_lock)> lk(_lock);
     ++_nr_contenders;
-    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    _cond.wait_for(lk, msecs, [this]()
+        { return !_tasks.empty() || !stopped; });
     --_nr_contenders;
 
-    if(hasTask) {
+    if(!_tasks.empty()) {
         ret = _tasks.front();
         _tasks.pop_front();
     }
@@ -118,10 +120,11 @@ task_ptr prio_scheduler::schedule(std::chrono::milliseconds msecs)
 
     std::unique_lock<decltype(_lock)> lk(_lock);
     ++_nr_contenders;
-    const bool hasTask = _cond.wait_for(lk, msecs, [this]() { return !_tasks.empty(); });
+    _cond.wait_for(lk, msecs, [this]()
+        { return !_tasks.empty() || !stopped; });
     --_nr_contenders;
 
-    if(hasTask) {
+    if(!_tasks.empty()) {
         ret = _tasks.top();
         _tasks.pop();
     }
@@ -147,7 +150,6 @@ void prio_scheduler::clear()
     std::unique_lock<decltype(_lock)> lk(_lock);
     _tasks.swap(victim);
 }
-
 
 } // namespace core
 

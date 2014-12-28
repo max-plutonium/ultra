@@ -55,8 +55,8 @@ struct task_prio_greather : std::binary_function<task_ptr, task_ptr, bool>
 template <typename Callable, typename... Args>
   class function_task : public task
   {
-      using result_type = typename std::result_of<Callable(Args...)>::type;
-      std::packaged_task<result_type(Args...)> _task;
+      using result_type = typename std::result_of<Callable (Args...)>::type;
+      std::packaged_task<result_type (Args...)> _task;
       const std::tuple<Args...> _args;
 
     template <std::size_t... Indices>
