@@ -11,7 +11,7 @@ TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.0.0
 
-load(ultra_cds)
+#load(ultra_cds)
 load(ultra_boost)
 
 
@@ -47,7 +47,10 @@ CONFIG(debug, debug|release) {
         -Wno-write-strings -Wno-unused-local-typedefs \
         -Wunreachable-code -Woverloaded-virtual
     QMAKE_CXXFLAGS_RELEASE += -fvisibility=hidden -fvisibility-inlines-hidden
-    win32*: LIBS += -lpthread
+    win32 {
+        LIBS += -lpthread
+        DEFINES += _GLIBCXX_HAS_GTHREADS
+    }
 }
 
 
@@ -58,8 +61,13 @@ HEADERS += \
     core.h \
     core/concurrent_queue.h \
     core/locks.h \
+    core/thread_pool.h \
+    task.h \
     ultra.h \
-    ultra_global.h
+    ultra_global.h \
+    core/schedulers.h \
+    core/future.h \
+    core/result.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -68,8 +76,12 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
-    ultra.cpp
-
+    core/thread_pool.cpp \
+    task.cpp \
+    ultra.cpp \
+    core/schedulers.cpp \
+    core/future.cpp \
+    core/result.cpp
 
 ### Install settings ###
 

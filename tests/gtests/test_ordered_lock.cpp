@@ -1,21 +1,7 @@
 #include "../../src/core/locks.h"
 #include "mock_types.h"
-#include <gmock/gmock.h>
 
 using testing::InSequence;
-
-class mock_mutex
-{
-public:
-    mock_mutex() = default;
-    mock_mutex(const mock_mutex&) = delete;
-    mock_mutex &operator=(const mock_mutex&) = delete;
-    mock_mutex(mock_mutex&&) noexcept = default;
-    mock_mutex &operator=(mock_mutex&&) noexcept = default;
-    MOCK_METHOD0(lock, void());
-    MOCK_METHOD0(unlock, void());
-};
-
 
 TEST(test_ordered_lock, ctors)
 {

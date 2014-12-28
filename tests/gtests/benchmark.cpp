@@ -4,13 +4,19 @@
 #include <omp.h>
 #include "benchmark.h"
 
-namespace detail {
+namespace details {
 
 benchmark_cpuclock_timer::benchmark_cpuclock_timer()
     : start_time(0)
 {
+#ifdef __unix__
     if(clock_getcpuclockid(getpid(), &clockid) != 0)
         perror("benchmark_cpuclock_timer: clock_getcpuclockid");
+#elif defined __MINGW32__
+    clockid = CLOCK_PROCESS_CPUTIME_ID;
+#else
+#   error "platform not supported"
+#endif
 }
 
 void benchmark_cpuclock_timer::start()
@@ -48,10 +54,9 @@ double benchmark_omp_timer::elapsed()
 
 
 benchmark_controller::benchmark_controller(
-        const char *aname, unsigned aiterations)
+        const char *aname, std::uint32_t aiterations)
     : name(aname), iteration(0), iterations(aiterations)
 {
-
     fprintf(stderr,
             "\n************************************\n"
             "start  benchmark \"%s\" for %u iterations\n",
@@ -76,7 +81,7 @@ benchmark_controller::~benchmark_controller()
 
 bool benchmark_controller::is_done()
 {
-    return (++iteration) == iterations;
+    return (iteration++) == iterations;
 }
 
-} // namespace detail
+} // namespace details

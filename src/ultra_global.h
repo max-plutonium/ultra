@@ -1,70 +1,65 @@
 #ifndef ULTRA_GLOBAL_H
 #define ULTRA_GLOBAL_H
 
-#include <QtCore/qglobal.h>
+#include <cstdint> // std::size_t
+#include <bits/move.h> // std::addressof
 
 #ifdef ULTRA_SHARED
-#  define ULTRA_EXPORT Q_DECL_EXPORT
+#  define ULTRA_EXPORT __attribute__((visibility("default")))
 #else
-#  define ULTRA_EXPORT Q_DECL_IMPORT
+#  define ULTRA_EXPORT __attribute__((visibility("default")))
 #endif
 
 #ifdef QT_DEBUG
-#   define ULTRA_PRIVATE Q_DECL_IMPORT
+#   define ULTRA_PRIVATE __attribute__((visibility("default")))
 #else
-#   define ULTRA_PRIVATE Q_DECL_HIDDEN
+#   define ULTRA_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
-#ifdef Q_CC_GNU
-#   define ULTRA_CONSTRUCTOR __attribute__((constructor))
-#   define ULTRA_DESTRUCTOR __attribute__((destructor))
-#   define ULTRA_LIKELY(V) __builtin_expect(!!(V), 1)
-#   define ULTRA_UNLIKELY(V) __builtin_expect(!!(V), 0)
-#else
-#   define ULTRA_CONSTRUCTOR
-#   define ULTRA_DESTRUCTOR
-#   define ULTRA_LIKELY(V)
-#   define ULTRA_UNLIKELY(V)
-#endif
+namespace ultra {
 
-#include <bits/move.h> // std::addressof
+template <std::size_t... Indices>
+  struct tuple_indices {
+      typedef tuple_indices<Indices..., sizeof... (Indices)> next;
+  };
+
+template <std::size_t N>
+  struct tuple_indices_builder {
+      typedef typename tuple_indices_builder<N - 1>::type::next type;
+  };
+
+template <>
+  struct tuple_indices_builder<0> {
+      typedef tuple_indices<> type;
+  };
 
 template <typename Tp>
-static constexpr Tp *_get_ptr(Tp *tp) { return tp; }
+  static inline constexpr Tp *_get_ptr(Tp *tp) { return tp; }
 template <typename Wrap>
-static constexpr typename Wrap::element_type *_get_ptr(Wrap &w)
-{ return std::addressof(*w); }
+  static inline constexpr typename Wrap::element_type *_get_ptr(Wrap &w)
+  { return std::addressof(*w); }
 template <typename Wrap>
-static constexpr typename Wrap::pointer _get_ptr(Wrap const &w)
-{ return std::addressof(*w); }
+  static inline constexpr typename Wrap::pointer _get_ptr(Wrap const &w)
+  { return std::addressof(*w); }
 
-#define implclass(C)    class C##_impl
-#define faceclass(C)    class C
-#define unique_impl(C)  C##_impl *const _implptr
-#define shared_impl(C)  std::shared_ptr<C##_impl> _implptr
-#define face_ptr(C)     C *_faceptr = nullptr
+#define unique_impl(impl)  class impl; std::unique_ptr<impl> _##impl
+#define shared_impl(impl)  class impl; std::shared_ptr<impl> _##impl
 
-#define decl_impl(C) private: \
-    inline C##_impl *_get_impl() \
-    { return reinterpret_cast<C##_impl*>(_get_ptr(_implptr)); } \
-    inline const C##_impl *_get_impl() const \
-    { return reinterpret_cast<const C##_impl*>(_get_ptr(_implptr)); } \
-    friend class C##_impl
+#define decl_impl(impl) private: \
+    inline impl *_get_##impl() \
+    { return reinterpret_cast<impl *>(_get_ptr(_##impl)); } \
+    inline const impl *_get_##impl() const \
+    { return reinterpret_cast<const impl *>(_get_ptr(_##impl)); } \
+    friend class impl
 
-#define decl_impl_name(C, P) private: \
-    inline C##_impl *_get_impl() \
-    { return reinterpret_cast<C##_impl*>(_get_ptr(P)); } \
-    inline const C##_impl *_get_impl() const \
-    { return reinterpret_cast<const C##_impl*>(_get_ptr(P)); } \
-    friend class C##_impl
+#define decl_face(face) \
+    inline face *_get_##face() { return static_cast<face *>(_get_ptr(_##face)); } \
+    inline const face *_get_##face() const \
+    { return static_cast<const face *>(_get_ptr(_##face)); } \
+    friend class face
 
-#define decl_face(C) \
-    inline C *_get_face() { return static_cast<C*>(_get_ptr(_faceptr)); } \
-    inline const C *_get_face() const \
-    { return static_cast<const C*>(_get_ptr(_faceptr)); } \
-    friend class C
+#define def(ptr) auto *const ptr = _get_#ptr()
 
-#define pimpl auto *const impl = _get_impl()
-#define pface auto *const face = _get_face()
+} // namespace ultra
 
 #endif // ULTRA_GLOBAL_H
