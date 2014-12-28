@@ -10,7 +10,7 @@ namespace ultra { namespace core {
   template <typename Tp, typename Alloc>
       template<typename... Args>
     auto
-    detail::basic_forward_queue<Tp, Alloc>::
+    details::basic_forward_queue<Tp, Alloc>::
     _create_node(Args&&... args) -> scoped_node_ptr
     {
         using traits = std::allocator_traits<node_alloc_type>;
@@ -25,7 +25,7 @@ namespace ultra { namespace core {
  */
   template <typename Tp, typename Alloc>
     void
-    detail::basic_forward_queue<Tp, Alloc>::
+    details::basic_forward_queue<Tp, Alloc>::
     _hook(node *p) noexcept
     {
         if(!_impl.last)
@@ -41,7 +41,7 @@ namespace ultra { namespace core {
  */
   template <typename Tp, typename Alloc>
     auto
-    detail::basic_forward_queue<Tp, Alloc>::
+    details::basic_forward_queue<Tp, Alloc>::
     _unhook_next() noexcept -> scoped_node_ptr
     {
         scoped_node_ptr node { _impl.next, *this };
@@ -59,7 +59,7 @@ namespace ultra { namespace core {
  */
   template <typename Tp, typename Alloc>
     void
-    detail::basic_forward_queue<Tp, Alloc>::_clear()
+    details::basic_forward_queue<Tp, Alloc>::_clear()
     {
         while(_unhook_next());
     }

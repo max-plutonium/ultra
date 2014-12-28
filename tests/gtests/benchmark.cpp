@@ -4,7 +4,7 @@
 #include <omp.h>
 #include "benchmark.h"
 
-namespace detail {
+namespace details {
 
 benchmark_cpuclock_timer::benchmark_cpuclock_timer()
     : start_time(0)
@@ -84,4 +84,4 @@ bool benchmark_controller::is_done()
     return (iteration++) == iterations;
 }
 
-} // namespace detail
+} // namespace details
