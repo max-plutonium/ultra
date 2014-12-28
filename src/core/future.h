@@ -3,9 +3,8 @@
 
 #include <mutex>
 #include <condition_variable>
-#include <atomic>
 #include <future>
-#include <functional>
+#include "action.h"
 #include "result.h"
 
 namespace ultra { namespace core {
@@ -72,7 +71,7 @@ public:
     }
 
 protected:
-    void _set_result(std::function<ptr_type ()> func) {
+    void set(action<ptr_type ()> func) {
         ptr_type res = func();
         std::lock_guard<decltype(_lock)> lk(_lock);
         _result.swap(res);

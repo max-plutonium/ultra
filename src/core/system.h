@@ -34,6 +34,10 @@ public:
     static std::size_t maximum_stacksize();
     static machine_stack allocate_stack(std::size_t stack_size);
     static void deallocate_stack(machine_stack &);
+
+    static int fork_process(int (*entry)(int, char **, char **), int argc, char **argv, char **envp);
+    static int join_process(int pid);
+    static void kill_process(int pid);
 };
 
 } // namespace core

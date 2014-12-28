@@ -11,36 +11,25 @@
 #endif
 
 #ifndef NDEBUG
-#   define ULTRA_PRIVATE
+#   define ULTRA_INTERNAL
 #else
-#   define ULTRA_PRIVATE __attribute__((visibility ("hidden")))
+#   define ULTRA_INTERNAL __attribute__((visibility ("hidden")))
 #endif
 
 namespace ultra {
 
-template <std::size_t... Indices>
-  struct tuple_indices {
-      typedef tuple_indices<Indices..., sizeof... (Indices)> next;
-  };
+namespace details {
 
-template <std::size_t N>
-  struct tuple_indices_builder {
-      typedef typename tuple_indices_builder<N - 1>::type::next type;
-  };
+  template <typename Tp>
+    static inline constexpr Tp *_get_ptr(Tp *tp) { return tp; }
+  template <typename Wrap>
+    static inline constexpr typename Wrap::element_type *_get_ptr(Wrap &w)
+    { return std::addressof(*w); }
+  template <typename Wrap>
+    static inline constexpr typename Wrap::pointer _get_ptr(Wrap const &w)
+    { return std::addressof(*w); }
 
-template <>
-  struct tuple_indices_builder<0> {
-      typedef tuple_indices<> type;
-  };
-
-template <typename Tp>
-  static inline constexpr Tp *_get_ptr(Tp *tp) { return tp; }
-template <typename Wrap>
-  static inline constexpr typename Wrap::element_type *_get_ptr(Wrap &w)
-  { return std::addressof(*w); }
-template <typename Wrap>
-  static inline constexpr typename Wrap::pointer _get_ptr(Wrap const &w)
-  { return std::addressof(*w); }
+} // namespace details
 
 #define unique_impl(impl)  class impl; std::unique_ptr<impl> _##impl
 #define shared_impl(impl)  class impl; std::shared_ptr<impl> _##impl

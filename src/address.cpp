@@ -1,8 +1,8 @@
 #include "address.h"
 #include <boost/functional/hash.hpp>
+#include "msg.pb.h"
 
-namespace ultra
-{
+namespace ultra {
 
 address::address(int ax, int ay, int az) noexcept
     : _x(ax), _y(ay), _z(az)
@@ -31,5 +31,24 @@ std::size_t address_hash::operator()(const address &c) const
     return seed;
 }
 
+std::ostream &operator<<(std::ostream &o, const address &msg)
+{
+    internal::address int_address;
+    int_address.set_x(msg.x());
+    int_address.set_y(msg.y());
+    int_address.set_z(msg.z());
+    int_address.SerializeToOstream(&o);
+    return o;
+}
+
+std::istream &operator>>(std::istream &i, address &msg)
+{
+    internal::address int_address;
+    int_address.ParseFromIstream(&i);
+    msg._x = int_address.x();
+    msg._y = int_address.y();
+    msg._z = int_address.z();
+    return i;
+}
 
 } // namespace ultra

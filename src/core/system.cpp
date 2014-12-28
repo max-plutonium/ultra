@@ -15,6 +15,7 @@
 #   include <signal.h>          // MINSIGSTKSZ
 #   include <fcntl.h>           // open, close
 #   include <sys/mman.h>        // mmap, munmap, mprotect
+#   include <sys/wait.h>        // waitpid
 
 #elif defined __windows__
 #   include <windows.h>
@@ -334,10 +335,10 @@ asm volatile(
 
 namespace ultra { namespace core {
 
-extern "C" ULTRA_PRIVATE machine_context *
+extern "C" ULTRA_INTERNAL machine_context *
 __make_context(void *sp, context_entry ip);
 
-extern "C" ULTRA_PRIVATE std::intptr_t
+extern "C" ULTRA_INTERNAL std::intptr_t
 __switch_context(machine_context *, machine_context *, std::intptr_t);
 
 static thread_local machine_context *t_current_context;
@@ -388,7 +389,7 @@ system::make_context(const machine_stack &astack,
     return ret;
 }
 
-extern "C" ULTRA_PRIVATE std::intptr_t
+extern "C" ULTRA_INTERNAL std::intptr_t
 switch_context(machine_context *from, machine_context *to, std::intptr_t data)
 {
     t_current_context = to;
@@ -572,6 +573,35 @@ void system::deallocate_stack(machine_stack &astack)
 #elif defined __windows__
     ::VirtualFree(ptr, 0, MEM_RELEASE);
 
+#endif
+}
+
+/*static*/
+int system::fork_process(int (*entry)(int, char **, char **), int argc, char **argv, char **envp)
+{
+    int res = -1;
+
+#ifdef __unix__
+    const pid_t pid = ::fork();
+    res = (pid > 0) ? pid : entry(argc, argv, envp);
+#endif
+    return res;
+}
+
+/*static*/
+int system::join_process(int pid)
+{
+#ifdef __unix__
+    int exit_status = 0;
+    /*int res = */::waitpid(pid, &exit_status, WUNTRACED);
+    return exit_status;
+#endif
+}
+
+void system::kill_process(int pid)
+{
+#ifdef __unix__
+    ::kill(pid, SIGKILL);
 #endif
 }
 

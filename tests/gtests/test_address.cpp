@@ -96,3 +96,16 @@ TEST_F(test_address, hash_benchmark)
             hash(addr);
     }
 }
+
+TEST_F(test_address, marshalling)
+{
+    ultra::address addr1(123, 456, 789);
+    ultra::address addr2;
+
+    benchmark("marshalling 10000", 10000) {
+        std::stringstream s;
+        s << addr1;
+        s >> addr2;
+        EXPECT_EQ(addr1, addr2);
+    }
+}

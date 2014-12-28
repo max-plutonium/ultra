@@ -2,8 +2,8 @@
 #define ADDRESS_H
 
 #include <initializer_list>
+#include <iostream>
 #include "ultra_global.h"
-#include <initializer_list>
 
 namespace ultra
 {
@@ -25,8 +25,13 @@ namespace ultra
 
     private:
         int _x = 0, _y = 0, _z = 0;
+
+        friend std::ostream &operator<<(std::ostream &o, const address &msg);
+        friend std::istream &operator>>(std::istream &i, address &msg);
     };
 
+    std::ostream &operator<<(std::ostream &o, const address &msg);
+    std::istream &operator>>(std::istream &i, address &msg);
 
     struct address_hash
     {

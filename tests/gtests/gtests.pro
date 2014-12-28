@@ -54,3 +54,6 @@ SOURCES += \
     test_schedulers.cpp \
     test_system.cpp \
     test_thread_pool.cpp \
+    test_vm.cpp \
+    test_logic_time.cpp \
+    test_message.cpp

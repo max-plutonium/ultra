@@ -48,7 +48,7 @@ public:
 } // namespace details
 
 #define benchmark(name, iterations) \
-        for(details::benchmark_controller __benchmark(name, iterations); \
+        for(::details::benchmark_controller __benchmark(name, iterations); \
             !__benchmark.is_done();)
 
 #endif // BENCHMARK_H

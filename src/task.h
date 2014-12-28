@@ -4,7 +4,7 @@
 #include <atomic>
 #include <memory>
 #include <future>
-#include "ultra_global.h"
+#include "core/action.h"
 
 namespace ultra {
 
@@ -53,29 +53,29 @@ struct task_prio_greather : std::binary_function<task_ptr, task_ptr, bool>
 };
 
 template <typename Callable, typename... Args>
-  class function_task : public task
-  {
-      using result_type = typename std::result_of<Callable (Args...)>::type;
-      std::packaged_task<result_type (Args...)> _task;
-      const std::tuple<Args...> _args;
+class function_task : public task
+{
+    using result_type = typename std::result_of<Callable (Args...)>::type;
+    std::packaged_task<result_type (Args...)> _task;
+    const std::tuple<Args...> _args;
 
     template <std::size_t... Indices>
-      void call(tuple_indices<Indices...>)
-      { _task(std::get<Indices>(_args)...); }
+    void call(core::details::index_sequence<Indices...>)
+    { _task(std::get<Indices>(_args)...); }
 
-  public:
-      explicit function_task(Callable &&fun, Args &&...args)
-          : _task(std::forward<Callable>(fun))
-          , _args(std::forward<Args>(args)...)
-      { }
+public:
+    explicit function_task(Callable &&fun, Args &&...args)
+        : _task(std::forward<Callable>(fun))
+        , _args(std::forward<Args>(args)...)
+    { }
 
-      virtual void run() final override {
-          call(typename tuple_indices_builder<sizeof... (Args)>::type());
-      }
+    virtual void run() final override {
+        call(core::details::make_index_sequence_for<Args...>());
+    }
 
-      std::future<result_type>
-      get_future() { return _task.get_future(); }
-  };
+    std::future<result_type>
+    get_future() { return _task.get_future(); }
+};
 
 } // namespace ultra
 

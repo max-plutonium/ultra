@@ -53,6 +53,18 @@ CONFIG(debug, debug|release) {
     }
 }
 
+LIBS += -lprotobuf
+
+MSGFILES = \
+    msg.proto
+
+protoc.name = protoc
+protoc.input = MSGFILES
+protoc.output = ${QMAKE_FILE_BASE}.pb.cc
+protoc.commands = protoc --cpp_out=. ${QMAKE_FILE_IN}
+protoc.variable_out = SOURCES
+QMAKE_EXTRA_COMPILERS += protoc
+
 
 ### Files ###
 
@@ -68,7 +80,11 @@ HEADERS += \
     core/thread_pool.h \
     task.h \
     ultra.h \
-    ultra_global.h
+    ultra_global.h \
+    vm.h \
+    core/action.h \
+    logic_time.h \
+    message.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -83,7 +99,10 @@ SOURCES += \
     core/system.cpp \
     core/thread_pool.cpp \
     task.cpp \
-    ultra.cpp
+    ultra.cpp \
+    vm.cpp \
+    logic_time.cpp \
+    message.cpp
 
 ### Install settings ###
 
@@ -92,3 +111,6 @@ headerTarget.files = $$PUBLIC_HEADERS
 
 target.path = ../lib
 INSTALLS += target headerTarget
+
+DISTFILES += \
+    msg.proto
