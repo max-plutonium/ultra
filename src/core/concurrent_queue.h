@@ -7,7 +7,7 @@
 
 namespace ultra { namespace core {
 
-namespace detail {
+namespace details {
 
   template <typename Tp, typename Alloc>
     struct basic_forward_queue
@@ -79,11 +79,11 @@ namespace detail {
 
     }; // struct basic_forward_queue
 
-} // namespace detail
+} // namespace details
 
 
 template <typename Tp, typename Lock, typename Alloc = std::allocator<Tp>>
-class concurrent_queue : protected detail::basic_forward_queue<Tp, Alloc>
+class concurrent_queue : protected details::basic_forward_queue<Tp, Alloc>
 {
     static_assert(std::is_copy_constructible<Tp>::value
                   || std::is_move_constructible<Tp>::value,
@@ -92,7 +92,7 @@ class concurrent_queue : protected detail::basic_forward_queue<Tp, Alloc>
     static_assert(is_lockable<Lock>::value,
         "concurrent_queue only works with lockable type");
 
-    using _base = detail::basic_forward_queue<Tp, Alloc>;
+    using _base = details::basic_forward_queue<Tp, Alloc>;
 
     mutable Lock _lock;
 

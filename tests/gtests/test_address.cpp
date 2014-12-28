@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <random>
 #include <vector>
-
+#include <algorithm>
 
 class test_address : public ::testing::Test
 {

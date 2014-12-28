@@ -9,7 +9,7 @@ TEMPLATE = lib
 QT -= core gui
 TARGET = ultra
 DEFINES += ULTRA_SHARED
-VERSION = 0.0.0
+VERSION = 0.1.0
 
 #load(ultra_cds)
 load(ultra_boost)
@@ -60,8 +60,13 @@ HEADERS += \
     address.h \
     core.h \
     core/concurrent_queue.h \
+    core/future.h \
     core/locks.h \
+    core/result.h \
+    core/schedulers.h \
     core/system.h \
+    core/thread_pool.h \
+    task.h \
     ultra.h \
     ultra_global.h
 
@@ -72,7 +77,12 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
+    core/future.cpp \
+    core/result.cpp \
+    core/schedulers.cpp \
     core/system.cpp \
+    core/thread_pool.cpp \
+    task.cpp \
     ultra.cpp
 
 ### Install settings ###
