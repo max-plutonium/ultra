@@ -10,7 +10,7 @@ struct logic_time
     virtual bool advance() = 0;
 };
 
-class scalar_time : logic_time
+class scalar_time : public logic_time
 {
     std::size_t _time;
 

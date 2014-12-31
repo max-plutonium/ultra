@@ -16,6 +16,10 @@
 #   define ULTRA_INTERNAL __attribute__((visibility ("hidden")))
 #endif
 
+#define ULTRA_CONSTRUCTOR   __attribute__((constructor))
+#define ULTRA_DESTRUCTOR    __attribute__((destructor))
+#define ULTRA_EXPECT(V, E)  __builtin_expect(!!(V), E)
+
 namespace ultra {
 
 namespace details {
@@ -33,6 +37,7 @@ namespace details {
 
 #define unique_impl(impl)  class impl; std::unique_ptr<impl> _##impl
 #define shared_impl(impl)  class impl; std::shared_ptr<impl> _##impl
+#define face_ptr(C)        C *_faceptr = nullptr
 
 #define decl_impl(impl) private: \
     inline impl *_get_##impl() \

@@ -5,8 +5,8 @@
 #include <iostream>
 #include "ultra_global.h"
 
-namespace ultra
-{
+namespace ultra {
+
     struct address
     {
         constexpr address() noexcept = default;

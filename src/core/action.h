@@ -2,6 +2,8 @@
 #define ACTION_H
 
 #include "../ultra_global.h"
+#include <tuple>
+#include <memory>
 
 namespace ultra { namespace core {
 

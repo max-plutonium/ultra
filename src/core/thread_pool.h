@@ -18,8 +18,7 @@ class thread_pool_base : public executor
     std::shared_ptr<scheduler>  _sched;
     std::atomic_bool _shutdown;
 
-    enum worker_status
-    {
+    enum worker_status {
         ready, running, wait, stopped
     };
 
