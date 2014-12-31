@@ -84,7 +84,8 @@ HEADERS += \
     vm.h \
     core/action.h \
     logic_time.h \
-    message.h
+    message.h \
+    core/grid.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -102,7 +103,8 @@ SOURCES += \
     ultra.cpp \
     vm.cpp \
     logic_time.cpp \
-    message.cpp
+    message.cpp \
+    core/grid.cpp
 
 ### Install settings ###
 

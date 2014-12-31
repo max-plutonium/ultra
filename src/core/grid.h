@@ -246,7 +246,9 @@ public:
         inline bool operator!=(const iterator &o) const { return i != o.i; }
         inline std::pair<X, Y> operator*() const
         { return std::make_pair(i->_x, i->_y); }
-        inline const node *operator->() const { return i; }
+        inline const Z &operator->() const { return i->_z; }
+        inline const Z &value() const { return i->_z; }
+        inline void set_value(const Z &z) { i->_z = z; }
     };
 
     class x_iterator : public iterator

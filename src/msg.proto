@@ -13,5 +13,12 @@ message scalar_time {
 message scalar_message {
     required scalar_time time = 1;
     required address sender = 2;
-    optional bytes data = 3;
+    required address receiver = 3;
+    enum msg_type {
+        unknown = 0;
+        connect_sender = 1;
+        connect_receiver = 2;
+    }
+    required msg_type type = 4;
+    optional bytes data = 5;
 }

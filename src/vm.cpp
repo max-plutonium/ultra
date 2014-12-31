@@ -1,10 +1,26 @@
 #include "vm.h"
+#include "core/thread_pool.h"
+#include "core/grid.h"
+
+#include <shared_mutex>
+#include <unordered_map>
 #include <boost/program_options.hpp>
 #include <iostream>
 
+namespace {
+
+using namespace ultra;
+
+core::thread_pool<core::prio_scheduler> s_pool;
+
+std::shared_timed_mutex s_grid_lock;
+//core::grid<
+
+} // namespace
+
 namespace po = boost::program_options;
 
-std::shared_ptr<ultra::vm> ultra::vm::create_vm(int argc, char **argv)
+void uvm_init(int argc, char **argv)
 {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -26,6 +42,10 @@ std::shared_ptr<ultra::vm> ultra::vm::create_vm(int argc, char **argv)
     } else {
         std::cout << "Compression level was not set.\n";
     }
+}
 
-    return 0;
+bool uvm_post_action(ultra::core::action<void ()> action)
+{
+    s_pool.execute_callable(std::move(action));
+    return true;
 }

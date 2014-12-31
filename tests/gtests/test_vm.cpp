@@ -4,5 +4,5 @@
 TEST(test_vm, create)
 {
     char *argv[] = { "vm", "--help", "--compression=25" };
-    auto vm = ultra::vm::create_vm(2, argv);
+    uvm_init(2, argv);
 }

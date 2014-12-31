@@ -6,7 +6,8 @@ using namespace ultra;
 
 TEST(test_message, marshalling)
 {
-    scalar_message msg1(scalar_time(123), { 1, 2, 3 }, "data");
+    scalar_message msg1(scalar_message::unknown,
+                        { 1, 2, 3 }, { 1, 2, 3 }, scalar_time(123), "data");
     scalar_message msg2;
 
     benchmark("marshalling 10000", 10000) {
@@ -16,4 +17,3 @@ TEST(test_message, marshalling)
         EXPECT_EQ(msg1, msg2);
     }
 }
-
