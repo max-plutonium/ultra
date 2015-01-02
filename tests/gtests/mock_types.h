@@ -119,5 +119,13 @@ public:
     MOCK_METHOD0(run, void());
 };
 
+#include "../../src/node.h"
+
+class mock_node : public ultra::node
+{
+public:
+    mock_node(ultra::address a) : ultra::node(a) { }
+    MOCK_METHOD1(message, void (ultra::scalar_message_ptr));
+};
 
 #endif // MOCK_TYPES_H

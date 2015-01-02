@@ -1,18 +1,9 @@
 #include "../../src/vm.h"
-#include <gmock/gmock.h>
+#include "mock_types.h"
 #include "benchmark.h"
-
-class mock_node : public ultra::node
-{
-public:
-    mock_node(ultra::address a) : ultra::node(a) { }
-    MOCK_METHOD1(message, void (ultra::scalar_message_ptr));
-};
 
 using testing::InSequence;
 using testing::_;
-using testing::Eq;
-using testing::AtLeast;
 
 MATCHER_P5(ScalarMessage, type, sender, receiver, time, data, "Message") {
     return ultra::scalar_message(type, sender, receiver, time, data) == *arg;

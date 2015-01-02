@@ -70,7 +70,6 @@ QMAKE_EXTRA_COMPILERS += protoc
 HEADERS += \
     address.h \
     core/concurrent_queue.h \
-    core/future.h \
     core/locks.h \
     core/result.h \
     core/system.h \
@@ -95,7 +94,6 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 SOURCES += \
     address.cpp \
     core/concurrent_queue.tpp \
-    core/future.cpp \
     core/result.cpp \
     core/system.cpp \
     core/thread_pool.cpp \

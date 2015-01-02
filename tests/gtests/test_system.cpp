@@ -36,7 +36,7 @@ TEST_F(test_system, stack_allocation)
     EXPECT_TRUE(stack.second);
     system::deallocate_stack(stack);
 
-    benchmark("test_system: 1000000 stack allocs-deallocs", 1000000) {
+    benchmark("test_system: 1000 stack allocs-deallocs", 1000) {
         stack = system::allocate_stack(65535);
         system::deallocate_stack(stack);
     }
