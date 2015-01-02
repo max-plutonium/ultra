@@ -1,18 +1,18 @@
 
 
-BOOST_PATH = $$absolute_path($$PWD)/../boost_1_55_0
+BOOST_PATH = $$absolute_path($$PWD)/../boost_1_57_0
 BOOST_LIB_PATH = $$BOOST_PATH/stage/lib
 INCLUDEPATH += $$BOOST_PATH
 
 CONFIG(debug, debug|release) {
     unix: LIBS += -L$$BOOST_LIB_PATH \
-                -lboost_system-mt-d -lboost_context-mt-d
-    else: win32: LIBS += -L$$BOOST_LIB_PATH/debug/ \
-                -lboost_system-mt-d  -lboost_context-mt-d
+                -lboost_system -lboost_program_options
+    else: win32: LIBS += -L$$BOOST_LIB_PATH \
+                -lboost_system-mgw48-mt-d-1_55
 
 } else: CONFIG(release, debug|release) {
     unix: LIBS += -L$$BOOST_LIB_PATH \
-                -lboost_system-mt-s -lboost_context-mt-s
-    else: win32: LIBS += -L$$BOOST_LIB_PATH/release/ \
-                -lboost_system-mt-s -lboost_context-mt-s
+                -lboost_system -lboost_program_options
+    else: win32: LIBS += -L$$BOOST_LIB_PATH \
+                -lboost_system-mgw48-mt-s-1_55
 }

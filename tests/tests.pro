@@ -1,6 +1,6 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    auto \
-    benchmarks \
+#    auto \
+#    benchmarks \
     gtests

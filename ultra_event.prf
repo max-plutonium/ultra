@@ -1,0 +1,6 @@
+
+
+LIBEVENT_PATH = $$absolute_path($$PWD)/../libevent-2.0.21-stable/
+INCLUDEPATH += $$LIBEVENT_PATH/include
+
+LIBS += -levent

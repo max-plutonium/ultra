@@ -13,6 +13,7 @@ CONFIG -= app_bundle
 QMAKE_CXXFLAGS += -std=gnu++1y
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
+load(ultra_boost)
 load(ultra_gtest)
 load(ultra_jit)
 
@@ -21,14 +22,18 @@ BUILDROOT = ../../bin
 CONFIG(debug, debug|release) {
     CONFIG += warn_on
     BUILDSUFFIX = debug
-    LIBS += -L$$BUILDROOT -lultra-debug
+    LIBS += -L$$BUILDROOT
+    unix: LIBS += -lultra-debug
+    else: win32: LIBS += -lultra-debug0
 
     TARGET = $$join(TARGET,,, -debug)
 
 } else: CONFIG(release, debug|release) {
     CONFIG += warn_off
     BUILDSUFFIX = release
-    LIBS += -L$$BUILDROOT -lultra
+    LIBS += -L$$BUILDROOT
+    unix: LIBS += -lultra
+    else: win32: LIBS += -lultra0
 }
 
 
@@ -47,4 +52,12 @@ SOURCES += \
     test_address.cpp \
     test_concurrent_queue.cpp \
     test_ordered_lock.cpp \
-    test_libjit.cpp
+    test_libjit.cpp \
+    test_schedulers.cpp \
+    test_system.cpp \
+    test_thread_pool.cpp \
+    test_vm.cpp \
+    test_logic_time.cpp \
+    test_message.cpp \
+    test_grid.cpp \
+    test_node.cpp

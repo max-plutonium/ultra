@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <random>
 #include <vector>
-
+#include <algorithm>
 
 class test_address : public ::testing::Test
 {
@@ -78,6 +78,8 @@ TEST_F(test_address, ctors_benchmark)
     }
 }
 
+#include <algorithm>
+
 TEST_F(test_address, hash_benchmark)
 {
     constexpr int iterations = 1000000;
@@ -92,5 +94,18 @@ TEST_F(test_address, hash_benchmark)
         ultra::address_hash hash;
         for(const ultra::address &addr : vec)
             hash(addr);
+    }
+}
+
+TEST_F(test_address, marshalling)
+{
+    ultra::address addr1(123, 456, 789);
+    ultra::address addr2;
+
+    benchmark("marshalling 10000", 10000) {
+        std::stringstream s;
+        s << addr1;
+        s >> addr2;
+        EXPECT_EQ(addr1, addr2);
     }
 }

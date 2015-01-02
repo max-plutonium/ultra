@@ -1,0 +1,26 @@
+package ultra.internal;
+
+message address {
+    required int32 x = 1;
+    required int32 y = 2;
+    required int32 z = 3;
+}
+
+message scalar_time {
+    required int64 counter = 1;
+}
+
+message scalar_message {
+    required scalar_time time = 1;
+    required address sender = 2;
+    required address receiver = 3;
+    enum msg_type {
+        unknown = 0;
+        connect_sender = 1;
+        connect_receiver = 2;
+        disconnect_sender = 3;
+        disconnect_receiver = 4;
+    }
+    required msg_type type = 4;
+    optional bytes data = 5;
+}
