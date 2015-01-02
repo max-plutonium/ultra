@@ -19,6 +19,11 @@ std::size_t scalar_time::time() const
     return _time;
 }
 
+void scalar_time::merge(const scalar_time &other)
+{
+    _time = std::max(_time, other._time);
+}
+
 bool scalar_time::operator==(const scalar_time &o) const
 {
     return _time == o._time;

@@ -17,8 +17,11 @@ class scalar_message
 
 public:
     enum msg_type {
-        unknown = 0, connect_sender = 1,
-        connect_receiver = 2
+        unknown = 0,
+        connect_sender = 1,
+        connect_receiver = 2,
+        disconnect_sender = 3,
+        disconnect_receiver = 4
     };
 
 private:
@@ -26,11 +29,13 @@ private:
 
 public:
     scalar_message() = default;
-    explicit scalar_message(msg_type type, address sender, address receiver,
-                            scalar_time t = scalar_time(),
-                            const char *data = "");
+    scalar_message(msg_type type, address sender, address receiver,
+                   scalar_time t = scalar_time(), const std::string &data = "");
+    scalar_time time() const;
     address sender() const;
     address receiver() const;
+    msg_type type() const;
+    std::string data() const;
 
     bool operator==(const scalar_message &o) const;
     bool operator!=(const scalar_message &o) const;

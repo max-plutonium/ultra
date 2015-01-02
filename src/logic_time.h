@@ -19,6 +19,7 @@ public:
     explicit scalar_time(std::size_t t = 0);
     virtual bool advance() override;
     std::size_t time() const;
+    void merge(const scalar_time &other);
 
     bool operator==(const scalar_time &o) const;
     bool operator!=(const scalar_time &o) const;

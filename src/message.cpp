@@ -3,11 +3,16 @@
 
 namespace ultra {
 
-scalar_message::scalar_message(msg_type type, address sender, address receiver,
-    scalar_time t, const char *data)
+scalar_message::scalar_message(msg_type type, address sender,
+    address receiver, scalar_time t, const std::string &data)
     : _time(std::move(t)), _sender(sender)
     , _receiver(receiver), _data(data), _type(type)
 {
+}
+
+scalar_time scalar_message::time() const
+{
+    return _time;
 }
 
 address scalar_message::sender() const
@@ -18,6 +23,16 @@ address scalar_message::sender() const
 address scalar_message::receiver() const
 {
     return _receiver;
+}
+
+scalar_message::msg_type scalar_message::type() const
+{
+    return _type;
+}
+
+std::string scalar_message::data() const
+{
+    return _data;
 }
 
 bool scalar_message::operator==(const scalar_message &o) const
