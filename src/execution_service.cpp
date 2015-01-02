@@ -1,6 +1,6 @@
-#include "schedulers.h"
+#include "execution_service.h"
 
-namespace ultra { namespace core {
+namespace ultra {
 
 /************************************************************************************
     fifo_scheduler
@@ -150,7 +150,5 @@ void prio_scheduler::clear()
     std::unique_lock<decltype(_lock)> lk(_lock);
     _tasks.swap(victim);
 }
-
-} // namespace core
 
 } // namespace ultra

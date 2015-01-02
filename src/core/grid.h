@@ -82,6 +82,8 @@ public:
     typedef Allocator       allocator_type;
     typedef std::size_t     size_type;
 
+    grid() = default;
+
     void insert_x(const X &x) {
         _mapx.emplace(x, connections_x());
     }

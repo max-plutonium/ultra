@@ -1,14 +1,25 @@
 #ifndef VM_H
 #define VM_H
 
-#include "core/action.h"
-#include "message.h"
+#include "node.h"
 
-extern "C" {
+namespace ultra {
 
-void uvm_init(int argc, char **argv);
-bool uvm_post_action(ultra::core::action<void ()>);
+class vm
+{
+    struct impl;
+    impl *d = nullptr;
 
-} // extern "C"
+public:
+    vm(int argc, const char **argv);
+    ~vm();
+
+    static vm *instance();
+    void register_node(node_ptr);
+    void loop();
+    void post_message(scalar_message_ptr);
+};
+
+} // namespace ultra
 
 #endif // VM_H

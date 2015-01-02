@@ -2,7 +2,7 @@
 #include "mock_types.h"
 #include <chrono>
 
-struct mock_scheduler : ultra::core::scheduler
+struct mock_scheduler : ultra::scheduler
 {
     MOCK_METHOD1(push, void (ultra::task_ptr));
     MOCK_METHOD1(schedule, ultra::task_ptr (std::chrono::milliseconds));
@@ -72,8 +72,8 @@ public:
     }
 };
 
-using test_types = testing::Types<ultra::core::fifo_scheduler,
-    ultra::core::lifo_scheduler, ultra::core::prio_scheduler>;
+using test_types = testing::Types<ultra::fifo_scheduler,
+    ultra::lifo_scheduler, ultra::prio_scheduler>;
 TYPED_TEST_CASE(typed_test_thread_pool, test_types);
 
 TYPED_TEST(typed_test_thread_pool, schedule_function_nosleep)

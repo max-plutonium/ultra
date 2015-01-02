@@ -1,11 +1,11 @@
-#ifndef SCHEDULERS_H
-#define SCHEDULERS_H
+#ifndef EXECUTION_SERVICE_H
+#define EXECUTION_SERVICE_H
 
-#include <mutex>
+#include "ultra.h"
+#include <deque>
 #include <queue>
-#include "../task.h"
 
-namespace ultra { namespace core {
+namespace ultra {
 
 class scheduler
 {
@@ -72,8 +72,16 @@ public:
     virtual void clear() override;
 };
 
-} // namespace core
+class execution_service : public executor
+{
+public:
+    execution_service() = default;
+//    execution_service(const execution_service &) = delete;
+//    execution_service &operator=(const execution_service &) = delete;
+//    execution_service(execution_service &&) = default;
+//    execution_service &operator=(execution_service &&) = default;
+};
 
 } // namespace ultra
 
-#endif // SCHEDULERS_H
+#endif // EXECUTION_SERVICE_H

@@ -1,11 +1,11 @@
-#include "../../src/core/schedulers.h"
+#include "../../src/execution_service.h"
 #include "mock_types.h"
 
 using namespace ultra;
 
 TEST(test_schedulers, fifo)
 {
-    core::fifo_scheduler sched;
+    fifo_scheduler sched;
     EXPECT_TRUE(sched.empty());
     EXPECT_EQ(std::size_t(0), sched.size());
 
@@ -38,7 +38,7 @@ TEST(test_schedulers, fifo)
 
 TEST(test_schedulers, lifo)
 {
-    core::lifo_scheduler sched;
+    lifo_scheduler sched;
     EXPECT_TRUE(sched.empty());
     EXPECT_EQ(std::size_t(0), sched.size());
 
@@ -71,7 +71,7 @@ TEST(test_schedulers, lifo)
 
 TEST(test_schedulers, prio)
 {
-    core::prio_scheduler sched;
+    prio_scheduler sched;
     EXPECT_TRUE(sched.empty());
     EXPECT_EQ(std::size_t(0), sched.size());
 

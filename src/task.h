@@ -1,37 +1,31 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include <atomic>
-#include <memory>
+#include <mutex>
 #include <future>
+#include "ultra.h"
+#include "core/result.h"
 #include "core/action.h"
 
 namespace ultra {
 
+class executor;
+
 enum class task_state : char
 {
-    undefined = -1,
-    zombie,
-    running,
-    timed_wait,
-    monitor,
-    wait,
-
-    initializing,
-    starting,
-    suspended,
-    stopping
+    ready, running, paused, canceled,
+    wait_for_signal, finished, exception_occurred
 };
 
 class task : public std::enable_shared_from_this<task>
 {
 protected:
-    std::atomic<task_state> _state;
+    task_state _state;
     int _prio;
 
 public:
     explicit task(int prio = 0);
-    virtual ~task() = default;
+    virtual ~task();
     virtual void run() = 0;
 
     friend struct task_prio_less;

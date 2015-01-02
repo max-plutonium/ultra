@@ -59,4 +59,4 @@ SOURCES += \
     test_logic_time.cpp \
     test_message.cpp \
     test_grid.cpp \
-    test_libevent.cpp
+    test_node.cpp

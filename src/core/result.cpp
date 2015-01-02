@@ -2,12 +2,12 @@
 
 using namespace ultra::core;
 
-void details::result_base::Deleter::operator()(details::result_base *r) const
+void result_base::deleter::operator()(result_base *r) const
 {
     r->_destroyer(r);
 }
 
-details::result_base::result_base(details::result_base::Destroyer d)
+result_base::result_base(result_base::destroyer d)
     : _destroyer(d)
 {
 }

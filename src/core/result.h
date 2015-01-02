@@ -6,28 +6,28 @@
 
 namespace ultra { namespace core {
 
-namespace details {
-
 struct result_base
 {
 protected:
     std::exception_ptr _exception;
     result_base(const result_base&) = delete;
     result_base &operator=(const result_base&) = delete;
-    using Destroyer = void (*)(result_base *);
-    Destroyer _destroyer;
+    using destroyer = void (*)(result_base *);
+    destroyer _destroyer;
 
-    struct Deleter {
+public:
+    struct deleter {
         void operator()(result_base *r) const;
     };
 
-    result_base(Destroyer d);
+protected:
+    result_base(destroyer d);
 };
 
-template <typename Tp> class result : public details::result_base
+template <typename Tp> class result : public result_base
 {
 private:
-    static void destroy(details::result_base *thiz) {
+    static void destroy(result_base *thiz) {
         delete static_cast<result *>(thiz);
     }
 
@@ -35,7 +35,7 @@ private:
     Tp *_ptr = nullptr;
 
 public:
-    result() : details::result_base(&destroy) { }
+    result() : result_base(&destroy) { }
     ~result() { if(_ptr) _ptr->~Tp(); }
 
     void set(const Tp &res) {
@@ -55,7 +55,7 @@ public:
     using result_type = Tp;
 
 protected:
-    result(Destroyer d) : details::result_base(d) { }
+    result(destroyer d) : result_base(d) { }
 };
 
 template <typename Tp, typename Alloc>
@@ -65,7 +65,7 @@ struct result_alloc final : public result<Tp>, public Alloc
         template rebind_alloc<result_alloc>;
 
 private:
-    static void destroy(details::result_base *thiz) {
+    static void destroy(result_base *thiz) {
         using traits = std::allocator_traits<allocator_type>;
         allocator_type a;
         traits::destroy(a, static_cast<result_alloc *>(thiz));
@@ -77,7 +77,7 @@ public:
 };
 
 template<typename Result>
-  using ResultPtr = std::unique_ptr<Result, result_base::Deleter>;
+  using ResultPtr = std::unique_ptr<Result, result_base::deleter>;
 
 template<typename Tp, typename Allocator>
 static ResultPtr<result_alloc<Tp, Allocator>>
@@ -104,8 +104,6 @@ allocate_result(const std::allocator<Up> &a)
 {
     return ResultPtr<result<Tp>>(new result<Tp>);
 }
-
-} // namespace details
 
 } // namespace core
 

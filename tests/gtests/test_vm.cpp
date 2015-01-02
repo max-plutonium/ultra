@@ -1,8 +1,14 @@
 #include "../../src/vm.h"
 #include <gmock/gmock.h>
 
-TEST(test_vm, create)
+#include "../../src/ultra.h"
+#include "../../src/message.h"
+#include "../../src/core/pipe.h"
+
+#include <valarray>
+
+TEST(test_vm, DISABLED_create)
 {
-    char *argv[] = { "vm", "--help", "--compression=25" };
-    uvm_init(2, argv);
+    const char *argv[] = { "vm", "--num-threads=2", "--address=127.0.0.1", "--port=2200" };
+    ultra::vm vm(4, argv);
 }

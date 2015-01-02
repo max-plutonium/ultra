@@ -1,19 +1,14 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#include "schedulers.h"
+#include "../execution_service.h"
 #include <unordered_set>
 #include <list>
 #include <future>
 
 namespace ultra { namespace core {
 
-struct executor
-{
-    virtual void execute(task_ptr) = 0;
-};
-
-class thread_pool_base : public executor
+class thread_pool_base : public execution_service
 {
     std::shared_ptr<scheduler>  _sched;
     std::atomic_bool _shutdown;
@@ -115,7 +110,6 @@ public:
         return ret;
     }
 };
-
 
 } // namespace core
 

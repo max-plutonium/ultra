@@ -11,7 +11,7 @@ namespace ultra { namespace core {
 
 class state_base
 {
-    using ptr_type = details::ResultPtr<details::result_base>;
+    using ptr_type = ResultPtr<result_base>;
     ptr_type _result;
     std::mutex _lock;
     std::condition_variable _cond;
@@ -28,7 +28,7 @@ public:
     state_base(const state_base &) = delete;
     state_base &operator=(const state_base &) = delete;
 
-    details::result_base &wait() {
+    result_base &wait() {
         _completer(this);
         std::unique_lock<decltype(_lock)> lk(_lock);
         _cond.wait(lk, [&] { return _ready(); });

@@ -69,12 +69,10 @@ QMAKE_EXTRA_COMPILERS += protoc
 
 HEADERS += \
     address.h \
-    core.h \
     core/concurrent_queue.h \
     core/future.h \
     core/locks.h \
     core/result.h \
-    core/schedulers.h \
     core/system.h \
     core/thread_pool.h \
     task.h \
@@ -84,7 +82,11 @@ HEADERS += \
     core/action.h \
     logic_time.h \
     message.h \
-    core/grid.h
+    core/grid.h \
+    core/pipe.h \
+    execution_service.h \
+    core/ioservice_pool.h \
+    node.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -95,7 +97,6 @@ SOURCES += \
     core/concurrent_queue.tpp \
     core/future.cpp \
     core/result.cpp \
-    core/schedulers.cpp \
     core/system.cpp \
     core/thread_pool.cpp \
     task.cpp \
@@ -103,7 +104,11 @@ SOURCES += \
     vm.cpp \
     logic_time.cpp \
     message.cpp \
-    core/grid.cpp
+    core/grid.cpp \
+    core/pipe.cpp \
+    execution_service.cpp \
+    core/ioservice_pool.cpp \
+    node.cpp
 
 ### Install settings ###
 
