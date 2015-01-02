@@ -8,13 +8,14 @@
 TEMPLATE = app
 QT =
 TARGET = ultra-gtests
-CONFIG += console c++11
+CONFIG += console
 CONFIG -= app_bundle
 QMAKE_CXXFLAGS += -std=gnu++1y
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_boost)
 load(ultra_gtest)
+load(ultra_event)
 
 BUILDROOT = ../../bin
 
@@ -57,4 +58,5 @@ SOURCES += \
     test_vm.cpp \
     test_logic_time.cpp \
     test_message.cpp \
-    test_grid.cpp
+    test_grid.cpp \
+    test_libevent.cpp

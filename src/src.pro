@@ -14,7 +14,6 @@ VERSION = 0.1.0
 #load(ultra_cds)
 load(ultra_boost)
 
-
 ### Building settings ###
 
 DESTDIR = ../bin
