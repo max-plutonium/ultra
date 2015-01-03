@@ -41,6 +41,7 @@ TEST(test_node, test)
                 message(_)).Times(1);
 
     EXPECT_TRUE(n1->connect(n2));
+    EXPECT_FALSE(n1->connect(n2));
 
     n1->post_message(scalar_message::unknown, address(2, 3, 4));
 }

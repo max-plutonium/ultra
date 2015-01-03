@@ -3,90 +3,7 @@
 #include <cassert>
 #include <sstream>
 
-#include "core/action.h"
-
-#define ULTRA_SIGNAL_TRACE
-
 namespace ultra {
-
-class function_tracer
-{
-
-/*! \internal
- *  \brief  Непосредственно выводит трассировочное сообщение
- *  \param  amessage  Форматная строка для выводимого сообщения.
- *  \param  atuple    Кортеж с аргументами форматной строки.
- *  \note   Кол-во типов в \c TupleArgs должно совпадать с
- *  кол-вом индексов в \c Indices.
- */
-  template <typename... TupleArgs, size_t... Indices>
-    inline static void s_trace_message_impl(const char *amessage,
-        std::tuple<TupleArgs...> &atuple, core::details::index_sequence<Indices...>)
-    {
-        fprintf(stderr, amessage,
-                std::forward<TupleArgs>(std::get<Indices>(atuple))...);
-    }
-
-    struct function_tracer_impl_base {
-        virtual ~function_tracer_impl_base() {}
-    };
-
-    std::unique_ptr<function_tracer_impl_base> tracer_impl;
-
-  template <typename... Args>
-    class function_tracer_impl : public function_tracer_impl_base
-    {
-        // Форматная строка
-        std::string m_str;
-
-        // Кортеж аргументов форматной строки. Глупо хранить
-        // здесь ссылки на что-либо, поэтому перед распаковкой
-        // типов в шаблон кортежа снимаем с них ссылочный тип
-        std::tuple<typename
-            std::remove_reference<Args>::type...> m_tuple;
-
-    public:
-        function_tracer_impl(std::string astr, Args&&... args)
-            : m_str(astr)
-            , m_tuple(std::make_tuple(std::forward<Args>(args)...))
-        {
-            s_trace_message_impl(
-                std::string("--> " + m_str).data(), m_tuple,
-                    core::details::make_index_sequence_for<Args...>() );
-        }
-
-        virtual ~function_tracer_impl() override
-        {
-            s_trace_message_impl(
-                std::string("<-- " + m_str).data(), m_tuple,
-                    core::details::make_index_sequence_for<Args...>() );
-        }
-
-    };  //  class function_tracer_impl
-
-protected:
-    function_tracer() = default;
-
-public:
-  template <typename... Args>
-    function_tracer(std::string astr, Args&&... args)
-        : tracer_impl(new function_tracer_impl<Args...>(
-                          astr, std::forward<Args>(args)...) )
-    {}
-
-    ~function_tracer() = default;
-
-  template <typename... Args>
-    void message(std::string astr, Args&&... args)
-    {
-        auto tpl = std::make_tuple(std::forward<Args>(args)...);
-        s_trace_message_impl(
-            std::string("*** " + astr).data(), tpl,
-                core::details::make_index_sequence_for<Args...>() );
-    }
-
-};  //  class function_tracer
-
 
 /************************************************************************************
     node
@@ -162,12 +79,6 @@ void node::message(scalar_message_ptr msg)
 void node::post_message(scalar_message::msg_type type,
                         address addr, const std::string &data)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::post(signal &s): "
-                           "s = %i, this = %p, thread = %p\n",
-                           s.operator sigtype(), this, pthread_self());
-#endif
-
     _time.advance();
     auto msg = std::make_shared<scalar_message>(type, _addr, addr, _time, data);
 
@@ -196,11 +107,6 @@ void node::post_message(scalar_message::msg_type type,
 
 bool node::connect_sender(node *asender)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::connect_sender(device_impl *asender): "
-                           "asender = %p, this = %p, thread = %p\n",
-                           asender, this, pthread_self());
-#endif
     assert(asender);
     edge *cur = _senders;
 
@@ -240,12 +146,6 @@ bool node::connect_sender(node *asender)
 
 bool node::connect_receiver(node *areceiver)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::connect_receiver(device_impl *areceiver): "
-                           "areceiver = %p, this = %p, thread = %p\n",
-                           areceiver, this, pthread_self());
-#endif
-
     assert(areceiver);
     edge *cur = _receivers;
 
@@ -286,12 +186,6 @@ bool node::connect_receiver(node *areceiver)
 
 void node::connect_sender(edge *c)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::connect_sender(connection *c): "
-                           "c = %p, this = %p, thread = %p\n",
-                           c, this, pthread_self());
-#endif
-
     assert(c);
     edge *cur = _senders;
     node *sender = c->_sender;
@@ -323,12 +217,6 @@ void node::connect_sender(edge *c)
 
 void node::connect_receiver(edge *c)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::connect_receiver(connection *c): "
-                           "c = %p, this = %p, thread = %p\n",
-                           c, this, pthread_self());
-#endif
-
     assert(c);
     edge *cur = _receivers;
     node *receiver = c->_receiver.load(std::memory_order_relaxed);
@@ -360,12 +248,6 @@ void node::connect_receiver(edge *c)
 
 bool node::disconnect_sender(node *asender)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::disconnect_sender(device_impl *asender): "
-                           "asender = %p, this = %p, thread = %p\n",
-                           asender, this, pthread_self());
-#endif
-
     assert(asender);
     edge *cur = _senders;
 
@@ -410,12 +292,6 @@ bool node::disconnect_sender(node *asender)
 
 bool node::disconnect_receiver(node *areceiver)
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::disconnect_receiver(device_impl *areceiver): "
-                           "areceiver = %p, this = %p, thread = %p\n",
-                           areceiver, this, pthread_self());
-#endif
-
     assert(areceiver);
     edge *cur = _receivers;
 
@@ -461,12 +337,6 @@ bool node::disconnect_receiver(node *areceiver)
 
 void node::disconnect_all_senders()
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::disconnect_all_senders(): "
-                           "this = %p, thread = %p\n",
-                           this, pthread_self());
-#endif
-
     while(_senders) {
         auto expected = this;
         if(!_senders->_receiver.compare_exchange_strong(
@@ -483,12 +353,6 @@ void node::disconnect_all_senders()
 
 void node::disconnect_all_receivers()
 {
-#ifdef ULTRA_CORE_TRACE
-    function_tracer tracer("device_impl::disconnect_all_receivers(): "
-                           "this = %p, thread = %p\n",
-                           this, pthread_self());
-#endif
-
     while(_receivers) {
         node *curreceiver = _receivers->_receiver.exchange(nullptr, std::memory_order_acq_rel);
 
