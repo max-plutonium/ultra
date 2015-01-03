@@ -24,3 +24,8 @@ message scalar_message {
     required msg_type type = 4;
     optional bytes data = 5;
 }
+
+message vector_time {
+    required int64 index = 1;
+    repeated int64 vector = 2;
+}
