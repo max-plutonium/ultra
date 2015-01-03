@@ -11,7 +11,7 @@ namespace ultra {
 
 class edge;
 
-class node
+class node : public std::enable_shared_from_this<node>
 {
     address _addr;
     scalar_time _time;
@@ -27,19 +27,15 @@ public:
     bool disconnect(const std::shared_ptr<node> &);
 
 protected:
-    virtual void message(scalar_message_ptr);
+    virtual void message(const scalar_message_ptr &);
 
 public:
     void post_message(scalar_message::msg_type type,
                       address addr, const std::string &data = "");
 
 private:
-    bool connect_sender(node *asender);
-    bool connect_receiver(node *areceiver);
     void connect_sender(edge *c);
-    void connect_receiver(edge *c);
-    bool disconnect_sender(node *asender);
-    bool disconnect_receiver(node *areceiver);
+    void disconnect_sender(const std::shared_ptr<node> &asender);
     void disconnect_all_senders();
     void disconnect_all_receivers();
 
@@ -50,12 +46,11 @@ using node_ptr = std::shared_ptr<node>;
 
 class edge
 {
-    node *_sender;
-    std::atomic<node *> _receiver;
+    std::weak_ptr<node> _sender, _receiver;
     edge *_next, *_down;
 
 public:
-    edge(node *sender, node *receiver);
+    edge(node_ptr sender, node_ptr receiver);
     friend class node;
 };
 

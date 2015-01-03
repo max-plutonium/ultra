@@ -2,6 +2,7 @@
 #include "core/ioservice_pool.h"
 #include "core/thread_pool.h"
 #include "node.h"
+#include "core/concurrent_queue.h"
 
 #include <boost/asio.hpp>
 #include <string>
@@ -14,6 +15,83 @@
 
 namespace ultra {
 
+/************************************************************************************
+    pipe
+ ***********************************************************************************/
+struct pipe::impl : public std::streambuf
+{
+    core::concurrent_queue<std::vector<char>, std::mutex> _packages;
+    std::vector<char> vec;
+
+    impl() {
+        vec.resize(2);
+        setbuf(vec.data(), 2);
+    }
+
+    virtual int_type
+    overflow(int_type __c = traits_type::eof()) override
+    {
+        return 1;
+    }
+
+    // basic_streambuf interface
+protected:
+    virtual std::streamsize xsgetn(char_type *s, std::streamsize n) override;
+    virtual std::streamsize xsputn(const char_type *s, std::streamsize n) override;
+};
+
+std::streamsize pipe::impl::xsgetn(char_type *s, std::streamsize /*n*/)
+{
+    std::vector<char> vec;
+    if(!_packages.dequeue(vec))
+        return 0;
+    std::memmove(s, vec.data(), vec.size());
+    return vec.size();
+}
+
+std::streamsize pipe::impl::xsputn(const char_type *s, std::streamsize n)
+{
+    _packages.enqueue(s, s + n);
+    return n;
+}
+
+pipe::pipe() : d(new impl)
+{
+}
+
+pipe::~pipe()
+{
+    delete d;
+}
+
+void pipe::attach(port *p)
+{
+//    p->rdbuf(d);
+}
+
+
+/************************************************************************************
+    port
+ ***********************************************************************************/
+port::port(address a, ultra::openmode om)
+    : node(a), std::stringstream(static_cast<std::ios_base::openmode>(om))
+{
+}
+
+port::~port()
+{
+}
+
+void port::message(const scalar_message_ptr &msg)
+{
+    node::message(msg);
+    str(msg->data());
+}
+
+
+/************************************************************************************
+    vm::impl
+ ***********************************************************************************/
 struct vm::impl : core::ioservice_pool
 {
     core::thread_pool<prio_scheduler> _pool;

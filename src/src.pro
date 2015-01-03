@@ -82,7 +82,6 @@ HEADERS += \
     logic_time.h \
     message.h \
     core/grid.h \
-    core/pipe.h \
     execution_service.h \
     core/ioservice_pool.h \
     node.h
@@ -103,7 +102,6 @@ SOURCES += \
     logic_time.cpp \
     message.cpp \
     core/grid.cpp \
-    core/pipe.cpp \
     execution_service.cpp \
     core/ioservice_pool.cpp \
     node.cpp

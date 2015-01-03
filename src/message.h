@@ -19,9 +19,7 @@ public:
     enum msg_type {
         unknown = 0,
         connect_sender = 1,
-        connect_receiver = 2,
-        disconnect_sender = 3,
-        disconnect_receiver = 4
+        disconnect_sender = 2,
     };
 
 private:

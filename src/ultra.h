@@ -18,21 +18,6 @@ struct executor
 
 using exec_ptr = std::shared_ptr<executor>;
 
-class iport : public std::istream
-{
-public:
-};
-
-class oport : public std::ostream
-{
-public:
-};
-
-class ioport : public std::iostream
-{
-public:
-};
-
 } // namespace ultra
 
 #endif // ULTRA_H
