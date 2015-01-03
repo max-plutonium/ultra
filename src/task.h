@@ -1,7 +1,6 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include <mutex>
 #include <future>
 #include "ultra.h"
 #include "core/result.h"
@@ -9,18 +8,9 @@
 
 namespace ultra {
 
-class executor;
-
-enum class task_state : char
-{
-    ready, running, paused, canceled,
-    wait_for_signal, finished, exception_occurred
-};
-
 class task : public std::enable_shared_from_this<task>
 {
 protected:
-    task_state _state;
     int _prio;
 
 public:

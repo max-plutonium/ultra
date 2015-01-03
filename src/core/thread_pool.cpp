@@ -6,6 +6,11 @@
 
 namespace ultra { namespace core {
 
+thread_pool_base::worker::worker(sched_ptr s, thread_pool_base *pool)
+    : _sched(std::move(s)), _pool(pool), _status(thread_pool_base::ready)
+{
+}
+
 class thread_worker : public thread_pool_base::worker
         , public std::enable_shared_from_this<thread_worker>
 {
@@ -210,8 +215,8 @@ void thread_pool_base::execute(task_ptr ptask)
     }
 }
 
-thread_pool_base::thread_pool_base(std::shared_ptr<scheduler> s, std::size_t max_threads)
-    : _sched(std::move(s)), _shutdown(false)
+thread_pool_base::thread_pool_base(sched_ptr s, std::size_t max_threads)
+    : execution_service(std::move(s)), _shutdown(false)
     , _waiting_task_timeout(10), _expiry_timeout(10000)
     , _active_threads(0), _nr_max_threads(max_threads), _nr_reserved(0)
 {

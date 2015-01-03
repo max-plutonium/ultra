@@ -2,15 +2,13 @@
 #define THREAD_POOL_H
 
 #include "../execution_service.h"
-#include <unordered_set>
 #include <list>
-#include <future>
+#include <unordered_set>
 
 namespace ultra { namespace core {
 
 class thread_pool_base : public execution_service
 {
-    std::shared_ptr<scheduler>  _sched;
     std::atomic_bool _shutdown;
 
     enum worker_status {
@@ -35,13 +33,12 @@ class thread_pool_base : public execution_service
 
     struct worker
     {
-        std::shared_ptr<scheduler> _sched;
+        sched_ptr _sched;
         thread_pool_base *_pool;
         worker_status _status;
         std::condition_variable _cond;
 
-        explicit worker(std::shared_ptr<scheduler> s, thread_pool_base *pool)
-            : _sched(std::move(s)), _pool(pool), _status(thread_pool_base::ready) { }
+        explicit worker(sched_ptr s, thread_pool_base *pool);
         virtual ~worker() = default;
         virtual void start(task_ptr t) = 0;
         virtual void join() = 0;
@@ -63,7 +60,7 @@ class thread_pool_base : public execution_service
 public:
     virtual void execute(task_ptr) final;
 
-    explicit thread_pool_base(std::shared_ptr<scheduler> s, std::size_t max_threads);
+    explicit thread_pool_base(sched_ptr s, std::size_t max_threads);
     ~thread_pool_base();
     thread_pool_base(const thread_pool_base&) = delete;
     thread_pool_base(thread_pool_base&&) = delete;

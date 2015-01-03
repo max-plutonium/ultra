@@ -25,6 +25,8 @@ public:
     inline void stop() { std::lock_guard<std::mutex> lk(_lock); stopped = true; }
 };
 
+using sched_ptr = std::shared_ptr<scheduler>;
+
 class fifo_scheduler : public scheduler
 {
     std::deque<task_ptr> _tasks;
@@ -74,12 +76,15 @@ public:
 
 class execution_service : public executor
 {
+protected:
+    sched_ptr  _sched;
+
 public:
-    execution_service() = default;
-//    execution_service(const execution_service &) = delete;
-//    execution_service &operator=(const execution_service &) = delete;
-//    execution_service(execution_service &&) = default;
-//    execution_service &operator=(execution_service &&) = default;
+    execution_service(sched_ptr sched) : _sched(sched) { }
+    execution_service(const execution_service &) = delete;
+    execution_service &operator=(const execution_service &) = delete;
+    execution_service(execution_service &&) = default;
+    execution_service &operator=(execution_service &&) = default;
 };
 
 } // namespace ultra

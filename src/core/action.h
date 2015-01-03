@@ -179,7 +179,7 @@ protected:
     };
 
 public:
-    bool isValid() const { return bool(holder); }
+    bool is_valid() const { return bool(holder); }
 
     action_base() = default;
     action_base(const action_base &o) : holder(o.holder) { }
@@ -319,6 +319,22 @@ auto make_action(Res (f)(Args...), BoundArgs &&...args)
 template <typename Res, typename Tp, typename Up,
           typename... Args, typename... BoundArgs>
 auto make_action(Res (Tp:: *f)(Args...), Up &&obj, BoundArgs &&...args)
+  -> decltype(details::make_action_aux<Res, Args...>(
+    std::declval<curried_function<decltype(std::mem_fn(f)), Up, BoundArgs...>>(),
+    std::declval<details::make_index_range<sizeof...(BoundArgs), sizeof...(Args) - sizeof...(BoundArgs)>>()))
+{
+    static_assert(sizeof...(BoundArgs) <= sizeof...(Args),
+        "Number of my arguments is greater than the number "
+        "of parameters of the original function");
+    return details::make_action_aux<Res, Args...>(
+        curried_function<decltype(std::mem_fn(f)), Up, BoundArgs...>(std::mem_fn(f),
+            std::forward<Up>(obj), std::forward<BoundArgs>(args)...),
+        details::make_index_range<sizeof...(BoundArgs), sizeof...(Args) - sizeof...(BoundArgs)>());
+}
+
+template <typename Res, typename Tp, typename Up,
+          typename... Args, typename... BoundArgs>
+auto make_action(Res (Tp:: *f)(Args...) const, Up &&obj, BoundArgs &&...args)
   -> decltype(details::make_action_aux<Res, Args...>(
     std::declval<curried_function<decltype(std::mem_fn(f)), Up, BoundArgs...>>(),
     std::declval<details::make_index_range<sizeof...(BoundArgs), sizeof...(Args) - sizeof...(BoundArgs)>>()))
