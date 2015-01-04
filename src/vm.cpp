@@ -179,7 +179,8 @@ void vm::loop()
 void vm::post_message(scalar_message_ptr msg)
 {
     port_ptr receiver = d->_space_map.at(msg->receiver())->shared_from_this();
-    d->_pool.execute_callable(&port::message, std::move(receiver), std::move(msg));
+    d->next_io_service().post(std::bind(&port::message, std::move(receiver), std::move(msg)));
+//    d->_pool.execute_callable(&port::message, std::move(receiver), std::move(msg));
 }
 
 } // namespace ultra

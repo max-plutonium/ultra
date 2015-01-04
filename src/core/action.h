@@ -353,4 +353,3 @@ auto make_action(Res (Tp:: *f)(Args...) const, Up &&obj, BoundArgs &&...args)
 } // namespace ultra
 
 #endif // ACTION_H
-

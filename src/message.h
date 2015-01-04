@@ -20,7 +20,9 @@ public:
         unknown = 0,
         port_data = 1,
         connect_sender = 2,
-        disconnect_sender = 3
+        connect_receiver = 3,
+        disconnect_sender = 4,
+        disconnect_receiver = 5
     };
 
 private:

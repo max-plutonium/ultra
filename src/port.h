@@ -5,9 +5,7 @@
 #include "logic_time.h"
 #include "message.h"
 #include <sstream>
-
-#include "core/concurrent_queue.h"
-#include <cstring>
+#include <deque>
 
 namespace ultra {
 
@@ -30,8 +28,7 @@ class port : public std::stringstream, public std::enable_shared_from_this<port>
     class notifier;
     notifier *_notifier;
 
-    class connection;
-    connection *_senders, *_receivers;
+    std::deque<std::weak_ptr<port>> _senders, _receivers;
 
 public:
     explicit port(address a, ultra::openmode om);
@@ -41,19 +38,21 @@ public:
     scalar_time time() const;
     ultra::openmode open_mode() const;
     bool connect(const std::shared_ptr<port> &);
-    bool disconnect(const std::shared_ptr<port> &);
+    void disconnect(const std::shared_ptr<port> &);
 
 protected:
     virtual void message(const scalar_message_ptr &);
     void post_message(scalar_message::msg_type type, const std::string &data = "");
+    friend class vm;
 
-private:
-    void connect_sender(connection *c);
+    bool connect_sender(const std::shared_ptr<port> &asender);
+    bool connect_receiver(const std::shared_ptr<port> &areceiver);
+
     void disconnect_sender(const std::shared_ptr<port> &asender);
+    void disconnect_receiver(const std::shared_ptr<port> &areceiver);
+
     void disconnect_all_senders();
     void disconnect_all_receivers();
-
-    friend class vm;
 };
 
 using port_ptr = std::shared_ptr<port>;
