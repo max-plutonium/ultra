@@ -84,7 +84,7 @@ HEADERS += \
     core/grid.h \
     execution_service.h \
     core/ioservice_pool.h \
-    node.h
+    port.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -104,7 +104,7 @@ SOURCES += \
     core/grid.cpp \
     execution_service.cpp \
     core/ioservice_pool.cpp \
-    node.cpp
+    port.cpp
 
 ### Install settings ###
 

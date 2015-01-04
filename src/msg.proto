@@ -16,8 +16,9 @@ message scalar_message {
     required address receiver = 3;
     enum msg_type {
         unknown = 0;
-        connect_sender = 1;
-        disconnect_sender = 2;
+        port_data = 1;
+        connect_sender = 2;
+        disconnect_sender = 3;
     }
     required msg_type type = 4;
     optional bytes data = 5;

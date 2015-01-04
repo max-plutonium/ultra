@@ -1,43 +1,89 @@
-#include "node.h"
+#include "port.h"
 #include "vm.h"
 #include <cassert>
-#include <sstream>
 
 namespace ultra {
 
+class port::connection
+{
+    std::weak_ptr<port> _sender, _receiver;
+    connection *_next, *_down;
+
+public:
+    connection(port_ptr sender, port_ptr receiver);
+    friend class port;
+};
+
+class port::notifier : public std::stringbuf
+{
+    port *_port;
+
+public:
+    explicit notifier(port *p) : _port(p) { }
+
+    virtual std::streamsize xsputn(const char_type *s, std::streamsize n)
+    {
+        std::string str(s, s + n);
+        _port->post_message(scalar_message::port_data, str);
+        return n;
+    }
+};
+
+
 /************************************************************************************
-    node
+    port::connection
  ***********************************************************************************/
-node::node(address a)
-    : _addr(a), _senders(nullptr), _receivers(nullptr)
+port::connection::connection(port_ptr sender, port_ptr receiver)
+    : _sender(sender), _receiver(receiver)
+    , _next(nullptr), _down(nullptr)
 {
 }
 
-node::~node()
+
+/************************************************************************************
+    port
+ ***********************************************************************************/
+port::port(address a, ultra::openmode om)
+    : std::stringstream(static_cast<std::ios_base::openmode>(om))
+    , _addr(a), _time(), _om(om), _notifier(new notifier(this))
+{
+    vm::instance()->register_port(this);
+    std::iostream::rdbuf(_notifier);
+    this->init(_notifier);
+}
+
+port::~port()
 {
     disconnect_all_senders();
     disconnect_all_receivers();
     assert(!_senders && !_receivers);
+    vm::instance()->unregister_port(this);
+    delete _notifier;
 }
 
-address node::get_address() const
+address port::get_address() const
 {
     return _addr;
 }
 
-scalar_time node::time() const
+scalar_time port::time() const
 {
     return _time;
 }
 
-bool node::connect(const node_ptr &areceiver)
+openmode port::open_mode() const
+{
+    return _om;
+}
+
+bool port::connect(const port_ptr &areceiver)
 {
     assert(areceiver);
-    edge *cur = _receivers;
+    connection *cur = _receivers;
 
     if(cur) {
-        node_ptr curreceiver = cur->_receiver.lock();
-        edge *before_cur = nullptr;
+        port_ptr curreceiver = cur->_receiver.lock();
+        connection *before_cur = nullptr;
 
         while(curreceiver < areceiver) {
             before_cur = cur;
@@ -47,7 +93,7 @@ bool node::connect(const node_ptr &areceiver)
         }
         if(cur && curreceiver == areceiver)
             return false;
-        edge *c = new edge(shared_from_this(), areceiver);
+        connection *c = new connection(shared_from_this(), areceiver);
         c->_down = cur;
         if(before_cur)
             before_cur->_down = c;
@@ -56,7 +102,7 @@ bool node::connect(const node_ptr &areceiver)
         cur = c;
     }
     else
-        _receivers = cur = new edge(shared_from_this(), areceiver);
+        _receivers = cur = new connection(shared_from_this(), areceiver);
 
     _time.advance();
 
@@ -68,18 +114,17 @@ bool node::connect(const node_ptr &areceiver)
     return true;
 }
 
-bool node::disconnect(const node_ptr &areceiver)
+bool port::disconnect(const port_ptr &areceiver)
 {
     assert(areceiver);
-    edge *cur = _receivers;
+    connection *cur = _receivers;
 
     if(cur)
     {
-        node_ptr curreceiver = cur->_receiver.lock();
-        edge *before_cur = nullptr;
+        port_ptr curreceiver = cur->_receiver.lock();
+        connection *before_cur = nullptr;
 
-        while(curreceiver < areceiver)
-        {
+        while(curreceiver < areceiver) {
             before_cur = cur;
             cur = cur->_down;
             if(!cur) break;
@@ -109,7 +154,7 @@ bool node::disconnect(const node_ptr &areceiver)
     return false;
 }
 
-void node::message(const scalar_message_ptr &msg)
+void port::message(const scalar_message_ptr &msg)
 {
     _time.merge(msg->time());
     _time.advance();
@@ -124,12 +169,19 @@ void node::message(const scalar_message_ptr &msg)
 
     switch(msg->type()) {
 
+        case scalar_message::port_data:
+            if(_notifier->str().empty())
+                _notifier->str(msg->data());
+            else
+                _notifier->str(_notifier->str() + '\n' + msg->data());
+            break;
+
         case scalar_message::connect_sender:
-            connect_sender(reinterpret_cast<edge *>(data_as_ptr));
+            connect_sender(reinterpret_cast<connection *>(data_as_ptr));
             break;
 
         case scalar_message::disconnect_sender:
-            disconnect_sender(reinterpret_cast<node *>(data_as_ptr)
+            disconnect_sender(reinterpret_cast<port *>(data_as_ptr)
                               ->shared_from_this());
             break;
 
@@ -138,17 +190,17 @@ void node::message(const scalar_message_ptr &msg)
     }
 }
 
-void node::post_message(scalar_message::msg_type type,
-                        address addr, const std::string &data)
+void port::post_message(scalar_message::msg_type type, const std::string &data)
 {
     _time.advance();
-    auto msg = std::make_shared<scalar_message>(type, _addr, addr, _time, data);
 
-    edge *cur = _receivers, *before_cur = nullptr;
+    connection *cur = _receivers, *before_cur = nullptr;
 
     while(cur) {
-        node_ptr curreceiver = cur->_receiver.lock();
+        port_ptr curreceiver = cur->_receiver.lock();
         if(ULTRA_EXPECT(curreceiver, true)) {
+            auto msg = std::make_shared<scalar_message>(type, _addr,
+                curreceiver->get_address(), _time, data);
             vm::instance()->post_message(msg);
             before_cur = cur;
             cur = cur->_down;
@@ -165,16 +217,16 @@ void node::post_message(scalar_message::msg_type type,
     }
 }
 
-void node::connect_sender(edge *c)
+void port::connect_sender(connection *c)
 {
     assert(c);
-    edge *cur = _senders;
-    node_ptr sender = c->_sender.lock();
+    connection *cur = _senders;
+    port_ptr sender = c->_sender.lock();
     assert(sender);
 
     if(cur) {
-        node_ptr cursender = cur->_sender.lock();
-        edge *before_cur = nullptr;
+        port_ptr cursender = cur->_sender.lock();
+        connection *before_cur = nullptr;
 
         while(cursender < sender)
         {
@@ -196,15 +248,15 @@ void node::connect_sender(edge *c)
         _senders = c;
 }
 
-void node::disconnect_sender(const node_ptr &asender)
+void port::disconnect_sender(const port_ptr &asender)
 {
     assert(asender);
-    edge *cur = _senders;
+    connection *cur = _senders;
 
     if(cur)
     {
-        node_ptr cursender = cur->_sender.lock();
-        edge *before_cur = nullptr;
+        port_ptr cursender = cur->_sender.lock();
+        connection *before_cur = nullptr;
 
         while(cursender < asender) {
             before_cur = cur;
@@ -234,7 +286,7 @@ void node::disconnect_sender(const node_ptr &asender)
     }
 }
 
-void node::disconnect_all_senders()
+void port::disconnect_all_senders()
 {
     while(_senders) {
         if(_senders->_receiver.expired()) {
@@ -247,10 +299,10 @@ void node::disconnect_all_senders()
     }
 }
 
-void node::disconnect_all_receivers()
+void port::disconnect_all_receivers()
 {
     while(_receivers) {
-        node_ptr curreceiver = _receivers->_receiver.lock();
+        port_ptr curreceiver = _receivers->_receiver.lock();
 
         if(!curreceiver) {
             auto old_cur = _receivers;
@@ -260,24 +312,16 @@ void node::disconnect_all_receivers()
         } else {
             _time.advance();
 
-            std::string str_ptr;
-            std::stringstream ss; ss << this; ss >> str_ptr;
-            auto msg = std::make_shared<scalar_message>(
-                scalar_message::disconnect_sender, _addr, curreceiver->_addr, _time, str_ptr);
-            vm::instance()->post_message(std::move(msg));
+//            std::string str_ptr;
+//            std::stringstream ss;
+//            ss << this;
+//            ss >> str_ptr;
+//            auto msg = std::make_shared<scalar_message>(
+//                scalar_message::disconnect_sender, _addr, curreceiver->_addr, _time, str_ptr);
+//            vm::instance()->post_message(std::move(msg));
             _receivers = _receivers->_down;
         }
     }
-}
-
-
-/************************************************************************************
-    edge
- ***********************************************************************************/
-edge::edge(node_ptr sender, node_ptr receiver)
-    : _sender(sender), _receiver(receiver)
-    , _next(nullptr), _down(nullptr)
-{
 }
 
 } // namespace ultra

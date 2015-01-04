@@ -18,8 +18,9 @@ class scalar_message
 public:
     enum msg_type {
         unknown = 0,
-        connect_sender = 1,
-        disconnect_sender = 2,
+        port_data = 1,
+        connect_sender = 2,
+        disconnect_sender = 3
     };
 
 private:

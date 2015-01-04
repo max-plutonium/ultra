@@ -1,7 +1,7 @@
 #include "vm.h"
 #include "core/ioservice_pool.h"
 #include "core/thread_pool.h"
-#include "node.h"
+#include "port.h"
 #include "core/concurrent_queue.h"
 
 #include <boost/asio.hpp>
@@ -14,80 +14,6 @@
 #include <iostream>
 
 namespace ultra {
-
-/************************************************************************************
-    pipe
- ***********************************************************************************/
-struct pipe::impl : public std::streambuf
-{
-    core::concurrent_queue<std::vector<char>, std::mutex> _packages;
-    std::vector<char> vec;
-
-    impl() {
-        vec.resize(2);
-        setbuf(vec.data(), 2);
-    }
-
-    virtual int_type
-    overflow(int_type __c = traits_type::eof()) override
-    {
-        return 1;
-    }
-
-    // basic_streambuf interface
-protected:
-    virtual std::streamsize xsgetn(char_type *s, std::streamsize n) override;
-    virtual std::streamsize xsputn(const char_type *s, std::streamsize n) override;
-};
-
-std::streamsize pipe::impl::xsgetn(char_type *s, std::streamsize /*n*/)
-{
-    std::vector<char> vec;
-    if(!_packages.dequeue(vec))
-        return 0;
-    std::memmove(s, vec.data(), vec.size());
-    return vec.size();
-}
-
-std::streamsize pipe::impl::xsputn(const char_type *s, std::streamsize n)
-{
-    _packages.enqueue(s, s + n);
-    return n;
-}
-
-pipe::pipe() : d(new impl)
-{
-}
-
-pipe::~pipe()
-{
-    delete d;
-}
-
-void pipe::attach(port *p)
-{
-//    p->rdbuf(d);
-}
-
-
-/************************************************************************************
-    port
- ***********************************************************************************/
-port::port(address a, ultra::openmode om)
-    : node(a), std::stringstream(static_cast<std::ios_base::openmode>(om))
-{
-}
-
-port::~port()
-{
-}
-
-void port::message(const scalar_message_ptr &msg)
-{
-    node::message(msg);
-    str(msg->data());
-}
-
 
 /************************************************************************************
     vm::impl
@@ -105,7 +31,7 @@ struct vm::impl : core::ioservice_pool
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
 
-    std::unordered_map<address, node_ptr, address_hash> _space_map;
+    std::unordered_map<address, port *, address_hash> _space_map;
 
     impl(std::size_t num_threads, std::size_t num_ios,
          const std::string &address, const std::string &port);
@@ -235,9 +161,14 @@ vm::~vm()
     return s_instance;
 }
 
-void vm::register_node(node_ptr n)
+void vm::register_port(port *n)
 {
     d->_space_map[n->get_address()] = n;
+}
+
+void vm::unregister_port(port *n)
+{
+    d->_space_map.erase(n->get_address());
 }
 
 void vm::loop()
@@ -247,8 +178,8 @@ void vm::loop()
 
 void vm::post_message(scalar_message_ptr msg)
 {
-    node_ptr receiver = d->_space_map.at(msg->receiver());
-    d->_pool.execute_callable(&node::message, std::move(receiver), std::move(msg));
+    port_ptr receiver = d->_space_map.at(msg->receiver())->shared_from_this();
+    d->_pool.execute_callable(&port::message, std::move(receiver), std::move(msg));
 }
 
 } // namespace ultra

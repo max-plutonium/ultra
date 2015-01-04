@@ -119,12 +119,13 @@ public:
     MOCK_METHOD0(run, void());
 };
 
-#include "../../src/node.h"
+#include "../../src/port.h"
 
-class mock_node : public ultra::node
+class mock_port : public ultra::port
 {
 public:
-    mock_node(ultra::address a) : ultra::node(a) { }
+    mock_port(ultra::address a, ultra::openmode om)
+        : ultra::port(a, om) { }
     MOCK_METHOD1(message, void (ultra::scalar_message_ptr));
 };
 

@@ -60,4 +60,4 @@ SOURCES += \
     test_logic_time.cpp \
     test_message.cpp \
     test_grid.cpp \
-    test_node.cpp
+    test_port.cpp
