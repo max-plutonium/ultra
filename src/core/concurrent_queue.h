@@ -100,10 +100,16 @@ class concurrent_queue : protected details::basic_forward_queue<Tp, Alloc>
   template <typename Tp2, typename Lock2, typename Alloc2>
     void _assign(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
+    void _append(concurrent_queue&&);
+
+    // Можно добавлять очереди с любыми совместимыми типами
+  template <typename Tp2, typename Lock2, typename Alloc2>
+    void _append(concurrent_queue<Tp2, Lock2, Alloc2> const&);
+
 public:
-    typedef Alloc       allocator_type;
-    typedef Tp          value_type;
-    typedef std::size_t size_type;
+    using allocator_type = Alloc;
+    using value_type = Tp;
+    using size_type = std::size_t;
 
     /// Возвращает аллокатор, используемый очередью
     allocator_type get_allocator() const noexcept
@@ -120,6 +126,11 @@ public:
     concurrent_queue(concurrent_queue<Tp2, Lock2, Alloc2> const&);
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue &operator=(concurrent_queue<Tp2, Lock2, Alloc2> const&);
+
+    concurrent_queue &append(concurrent_queue&&);
+
+  template <typename Tp2, typename Lock2, typename Alloc2>
+    concurrent_queue &append(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
     /// Перемещает содержимое \a other к себе
     concurrent_queue(concurrent_queue &&other) noexcept

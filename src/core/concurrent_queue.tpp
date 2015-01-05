@@ -28,10 +28,10 @@ namespace ultra { namespace core {
     details::basic_forward_queue<Tp, Alloc>::
     _hook(node *p) noexcept
     {
-        if(!_impl.last)
-            _impl.next = p;
-        else
+        if(_impl.last)
             _impl.last->next = p;
+        else
+            _impl.next = p;
         _impl.last = p;
     }
 
@@ -92,7 +92,6 @@ namespace ultra { namespace core {
             other_node_ptr;
             other_node_ptr = other_node_ptr->next)
         {
-            // тут бросает
             typename _base::scoped_node_ptr
                 node_ptr = temp._create_node(
                     nullptr, std::ref(other_node_ptr->t));
@@ -106,6 +105,65 @@ namespace ultra { namespace core {
 
         // Обмениваем внутренности с временным обьектом
         swap_unsafe(temp);
+    }
+
+/*! \internal
+ *  \brief Добавляет к себе содержимое очереди \a other
+ *  перемещением элементов с помощью простого обмена указателей
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+    void
+    concurrent_queue<Tp, Lock, Alloc>::
+    _append(concurrent_queue<Tp, Lock, Alloc> &&other)
+    {
+        // to protect deadlocks
+        ordered_lock<Lock, Lock> locker { _lock, other._lock };
+        if(this->_impl.last)
+            this->_impl.last->next = other._impl.next;
+        else
+            this->_impl.next = other._impl.next;
+        this->_impl.last = other._impl.last;
+        other._impl.next = nullptr;
+        other._impl.last = nullptr;
+    }
+
+/*! \internal
+ *  \brief Добавляет к себе содержимое очереди \a other копированием элементов
+ *  \note  Исходная очередь остается в первоначальном состоянии.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template<typename Tp2, typename Lock2, typename Alloc2>
+    void
+    concurrent_queue<Tp, Lock, Alloc>::
+    _append(concurrent_queue<Tp2, Lock2, Alloc2> const &other)
+    {
+        static_assert(std::is_constructible<Tp, Tp2>::value,
+                "template argument substituting Tp in second"
+           " queue object declaration must be constructible from"
+                     " Tp in first queue object declaration");
+
+        // Деструктор temp должен выполняться после разблокировок
+        concurrent_queue<Tp, Lock, Alloc> temp;
+
+        // to protect deadlocks
+        ordered_lock<Lock, Lock2> locker { _lock, other._lock };
+
+        // auto нужно, когда присваивается
+        // другой тип очереди с другим аллокатором
+        for(auto *other_node_ptr = other._impl.next;
+            other_node_ptr;
+            other_node_ptr = other_node_ptr->next)
+        {
+            typename _base::scoped_node_ptr
+                node_ptr = temp._create_node(
+                    nullptr, std::ref(other_node_ptr->t));
+            temp._hook(node_ptr.release());
+        }
+
+        locker.unlock();
+
+        // Обмениваем внутренности с временным обьектом
+        _append(std::move(temp));
     }
 
 /*! Конструктор очереди, инициализирует поля
@@ -173,6 +231,30 @@ namespace ultra { namespace core {
     operator=(concurrent_queue<Tp2, Lock2, Alloc2> const &other)
     {
         _assign(other); return *this;
+    }
+
+/*!
+ *  \brief Добавляет к себе содержимое очереди \a other перемещением элементов
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+    concurrent_queue<Tp, Lock, Alloc> &
+    concurrent_queue<Tp, Lock, Alloc>::
+    append(concurrent_queue<Tp, Lock, Alloc> &&other)
+    {
+        _append(std::move(other)); return *this;
+    }
+
+/*!
+ *  \brief Добавляет к себе содержимое очереди \a other копированием элементов
+ *  \note  Исходная очередь остается в первоначальном состоянии.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template <typename Tp2, typename Lock2, typename Alloc2>
+    concurrent_queue<Tp, Lock, Alloc> &
+    concurrent_queue<Tp, Lock, Alloc>::
+    append(concurrent_queue<Tp2, Lock2, Alloc2> const &other)
+    {
+        _append(other); return *this;
     }
 
 /*!

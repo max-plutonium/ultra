@@ -107,6 +107,7 @@ TEST(test_concurrent_queue, push_pop_unsafe)
     ultra::core::concurrent_queue<copyable_movable_t<false>, dummy_mutex> qq2;
     ultra::core::concurrent_queue<copyable_but_not_movable_t, dummy_mutex> qq3;
     ultra::core::concurrent_queue<not_copyable_but_movable_t, dummy_mutex> qq4;
+    ultra::core::concurrent_queue<throw_from_copying_t, dummy_mutex> qq5;
 
     for(int i = 0; i < num_tests; ++i)
     {
@@ -114,6 +115,7 @@ TEST(test_concurrent_queue, push_pop_unsafe)
         ASSERT_TRUE(qq2.push_unsafe(i));
         ASSERT_TRUE(qq3.push_unsafe(i));
         ASSERT_TRUE(qq4.push_unsafe(i));
+        ASSERT_TRUE(qq5.push_unsafe(i));
     }
 
     for(int i = 0; i < num_tests; ++i)
@@ -122,6 +124,7 @@ TEST(test_concurrent_queue, push_pop_unsafe)
         copyable_movable_t<false> ret_cm_except(99);
         copyable_but_not_movable_t ret_cnm(99);
         not_copyable_but_movable_t ret_ncm(99);
+        throw_from_copying_t ret_tfc(99);
 
         ASSERT_TRUE(qq1.pop_unsafe(ret_cm));
         EXPECT_EQ(i, ret_cm.get());
@@ -142,6 +145,8 @@ TEST(test_concurrent_queue, push_pop_unsafe)
         EXPECT_EQ(i, ret_ncm.get());
         EXPECT_FALSE(ret_ncm.was_copied());
         EXPECT_TRUE(ret_ncm.was_moved());
+
+        ASSERT_THROW(qq5.pop_unsafe(ret_tfc), const char *);
     }
 }
 
@@ -302,6 +307,76 @@ TEST(test_concurrent_queue, copy_ctors)
     EXPECT_TRUE(q_float_mutex.empty());
     EXPECT_TRUE(q_unsigned_dummy.empty());
     EXPECT_TRUE(q_unsigned_mutex.empty());
+}
+
+TEST(test_concurrent_queue, append)
+{
+    ultra::core::concurrent_queue<int, dummy_mutex> q_int_dummy;
+    ultra::core::concurrent_queue<int, std::mutex> q_int_mutex;
+    ultra::core::concurrent_queue<double, dummy_mutex> q_double_dummy;
+    ultra::core::concurrent_queue<double, std::mutex> q_double_mutex;
+    ultra::core::concurrent_queue<std::string, dummy_mutex> q_string_dummy;
+    ultra::core::concurrent_queue<std::string, std::mutex> q_string_mutex;
+
+    constexpr int num_tests = 3;
+    for(double d = 1.0; d < num_tests + 1; ++d)
+    {
+        ASSERT_TRUE(q_int_dummy.push_unsafe(d));
+        ASSERT_TRUE(q_int_mutex.push_unsafe(d));
+        ASSERT_TRUE(q_double_dummy.push_unsafe(d));
+        ASSERT_TRUE(q_double_mutex.push_unsafe(d));
+        ASSERT_TRUE(q_string_dummy.push_unsafe(boost::lexical_cast<std::string>(d)));
+        ASSERT_TRUE(q_string_mutex.push_unsafe(boost::lexical_cast<std::string>(d)));
+    }
+
+    ultra::core::concurrent_queue<int, dummy_mutex> q_int_dummy2;
+    ultra::core::concurrent_queue<int, std::mutex> q_int_mutex2;
+    ultra::core::concurrent_queue<double, dummy_mutex> q_double_dummy2;
+    ultra::core::concurrent_queue<double, std::mutex> q_double_mutex2;
+    ultra::core::concurrent_queue<std::string, dummy_mutex> q_string_dummy2;
+    ultra::core::concurrent_queue<std::string, std::mutex> q_string_mutex2;
+
+    q_int_dummy2.append(q_int_dummy);
+    q_int_mutex2.append(q_int_mutex);
+    q_double_dummy2.append(q_double_dummy);
+    q_double_mutex2.append(q_double_mutex);
+    q_string_dummy2.append(q_string_dummy);
+    q_string_mutex2.append(q_string_mutex);
+
+    EXPECT_FALSE(q_int_dummy.empty());
+    EXPECT_FALSE(q_int_mutex.empty());
+    EXPECT_FALSE(q_double_dummy.empty());
+    EXPECT_FALSE(q_double_mutex.empty());
+    EXPECT_FALSE(q_string_dummy.empty());
+    EXPECT_FALSE(q_string_mutex.empty());
+
+    EXPECT_FALSE(q_int_dummy2.empty());
+    EXPECT_FALSE(q_int_mutex2.empty());
+    EXPECT_FALSE(q_double_dummy2.empty());
+    EXPECT_FALSE(q_double_mutex2.empty());
+    EXPECT_FALSE(q_string_dummy2.empty());
+    EXPECT_FALSE(q_string_mutex2.empty());
+
+    q_int_dummy2.append(std::move(q_int_dummy));
+    q_int_mutex2.append(std::move(q_int_mutex));
+    q_double_dummy2.append(std::move(q_double_dummy));
+    q_double_mutex2.append(std::move(q_double_mutex));
+    q_string_dummy2.append(std::move(q_string_dummy));
+    q_string_mutex2.append(std::move(q_string_mutex));
+
+    EXPECT_TRUE(q_int_dummy.empty());
+    EXPECT_TRUE(q_int_mutex.empty());
+    EXPECT_TRUE(q_double_dummy.empty());
+    EXPECT_TRUE(q_double_mutex.empty());
+    EXPECT_TRUE(q_string_dummy.empty());
+    EXPECT_TRUE(q_string_mutex.empty());
+
+    EXPECT_FALSE(q_int_dummy2.empty());
+    EXPECT_FALSE(q_int_mutex2.empty());
+    EXPECT_FALSE(q_double_dummy2.empty());
+    EXPECT_FALSE(q_double_mutex2.empty());
+    EXPECT_FALSE(q_string_dummy2.empty());
+    EXPECT_FALSE(q_string_mutex2.empty());
 }
 
 TEST(test_concurrent_queue, copy_assign)
