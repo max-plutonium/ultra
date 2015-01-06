@@ -20,7 +20,7 @@ public:
     /// Get an io_service to use
     boost::asio::io_service &next_io_service();
 
-protected:
+private:
     typedef std::shared_ptr<boost::asio::io_service> io_service_ptr;
     typedef std::shared_ptr<boost::asio::io_service::work> work_ptr;
 

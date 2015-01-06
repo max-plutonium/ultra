@@ -1,13 +1,7 @@
-#include "vm.h"
-#include "core/ioservice_pool.h"
-#include "core/thread_pool.h"
+#include "core/core_p.h"
 #include "port.h"
+#include "message.h"
 #include "core/concurrent_queue.h"
-
-#include <boost/asio.hpp>
-#include <string>
-#include <shared_mutex>
-#include <unordered_map>
 
 #include <functional>
 #include <boost/program_options.hpp>
@@ -18,30 +12,6 @@ namespace ultra {
 /************************************************************************************
     vm::impl
  ***********************************************************************************/
-struct vm::impl : core::ioservice_pool
-{
-    core::thread_pool<prio_scheduler> _pool;
-
-    std::string _addr, _port;
-
-    /// The signal_set is used to register for process
-    /// termination notifications
-    boost::asio::signal_set _signals;
-
-    /// Acceptor used to listen for incoming connections.
-    boost::asio::ip::tcp::acceptor _acceptor;
-
-    std::unordered_map<address, port *, address_hash> _space_map;
-
-    impl(std::size_t num_threads, std::size_t num_ios,
-         const std::string &address, const std::string &port);
-
-    void start_accept();
-    void handle_accept(std::shared_ptr<boost::asio::ip::tcp::socket> sock,
-                       const boost::system::error_code &ec);
-    void handle_stop();
-};
-
 vm::impl::impl(std::size_t num_threads, std::size_t num_ios,
                const std::string &address, const std::string &port)
     : core::ioservice_pool(num_ios), _pool(num_threads)
@@ -92,11 +62,11 @@ void vm::impl::handle_stop()
  ***********************************************************************************/
 namespace po = boost::program_options;
 
-static vm *s_instance;
+vm *g_instance;
 
 vm::vm(int argc, const char **argv)
 {
-    s_instance = this;
+    g_instance = this;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -158,17 +128,7 @@ vm::~vm()
 
 /*static*/ vm *vm::instance()
 {
-    return s_instance;
-}
-
-void vm::register_port(port *n)
-{
-    d->_space_map[n->get_address()] = n;
-}
-
-void vm::unregister_port(port *n)
-{
-    d->_space_map.erase(n->get_address());
+    return g_instance;
 }
 
 void vm::loop()
@@ -176,11 +136,10 @@ void vm::loop()
     d->next_io_service().poll();
 }
 
-void vm::post_message(scalar_message_ptr msg)
+void vm::post_message(port_message msg)
 {
-    port_ptr receiver = d->_space_map.at(msg->receiver())->shared_from_this();
-    d->next_io_service().post(std::bind(&port::message, std::move(receiver), std::move(msg)));
-//    d->_pool.execute_callable(&port::message, std::move(receiver), std::move(msg));
+    d->next_io_service().post(std::bind(&port::impl::on_message,
+        std::move(msg.receiver()), std::move(msg)));
 }
 
 } // namespace ultra

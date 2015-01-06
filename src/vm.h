@@ -15,10 +15,8 @@ public:
     ~vm();
 
     static vm *instance();
-    void register_port(port *);
-    void unregister_port(port *);
     void loop();
-    void post_message(scalar_message_ptr);
+    void post_message(port_message);
 };
 
 } // namespace ultra

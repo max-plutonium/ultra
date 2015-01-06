@@ -1,11 +1,11 @@
 #ifndef EXECUTION_SERVICE_H
 #define EXECUTION_SERVICE_H
 
-#include "ultra.h"
+#include "../ultra.h"
 #include <deque>
 #include <queue>
 
-namespace ultra {
+namespace ultra { namespace core {
 
 class scheduler
 {
@@ -86,6 +86,8 @@ public:
     execution_service(execution_service &&) = default;
     execution_service &operator=(execution_service &&) = default;
 };
+
+} // namespace core
 
 } // namespace ultra
 

@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <gmock/gmock.h>
 
-
 template <bool NoexceptMovable = true>
 class copyable_movable_t
 {
@@ -14,11 +13,15 @@ class copyable_movable_t
 public:
     copyable_movable_t(int _i) : i(_i) { }
 
-    copyable_movable_t(const copyable_movable_t &o) : copyable_movable_t(o.i) { copied = true; }
-    copyable_movable_t &operator=(const copyable_movable_t &o) { i = o.i; copied = true; return *this; }
+    copyable_movable_t(const copyable_movable_t &o)
+        : copyable_movable_t(o.i) { copied = true; }
+    copyable_movable_t &operator=(const copyable_movable_t &o)
+    { i = o.i; copied = true; return *this; }
 
-    copyable_movable_t(copyable_movable_t &&o) noexcept(NoexceptMovable) : copyable_movable_t(o.i) { o.i = 0; moved = true; }
-    copyable_movable_t &operator=(copyable_movable_t &&o) noexcept(NoexceptMovable) { i = o.i; o.i = 0; moved = true; return *this; }
+    copyable_movable_t(copyable_movable_t &&o) noexcept(NoexceptMovable)
+        : copyable_movable_t(o.i) { o.i = 0; moved = true; }
+    copyable_movable_t &operator=(copyable_movable_t &&o) noexcept(NoexceptMovable)
+    { i = o.i; o.i = 0; moved = true; return *this; }
 
     ~copyable_movable_t() { i = -1; }
 
@@ -35,8 +38,10 @@ class copyable_but_not_movable_t
 public:
     copyable_but_not_movable_t(int _i) : i(_i) { }
 
-    copyable_but_not_movable_t(const copyable_but_not_movable_t &o) : copyable_but_not_movable_t(o.i) { copied = true; }
-    copyable_but_not_movable_t &operator=(const copyable_but_not_movable_t &o) { i = o.i; copied = true; return *this; }
+    copyable_but_not_movable_t(const copyable_but_not_movable_t &o)
+        : copyable_but_not_movable_t(o.i) { copied = true; }
+    copyable_but_not_movable_t &operator=(const copyable_but_not_movable_t &o)
+    { i = o.i; copied = true; return *this; }
 
     copyable_but_not_movable_t(copyable_but_not_movable_t &&o) = delete;
     copyable_but_not_movable_t &operator=(copyable_but_not_movable_t &&o) = delete;
@@ -59,8 +64,10 @@ public:
     not_copyable_but_movable_t(const not_copyable_but_movable_t &o) = delete;
     not_copyable_but_movable_t &operator=(const not_copyable_but_movable_t &o) = delete;
 
-    not_copyable_but_movable_t(not_copyable_but_movable_t &&o) noexcept : not_copyable_but_movable_t(o.i) { o.i = 0; moved = true; }
-    not_copyable_but_movable_t &operator=(not_copyable_but_movable_t &&o) noexcept { i = o.i; o.i = 0; moved = true; return *this; }
+    not_copyable_but_movable_t(not_copyable_but_movable_t &&o) noexcept
+        : not_copyable_but_movable_t(o.i) { o.i = 0; moved = true; }
+    not_copyable_but_movable_t &operator=(not_copyable_but_movable_t &&o) noexcept
+    { i = o.i; o.i = 0; moved = true; return *this; }
 
     ~not_copyable_but_movable_t() { i = -1; }
 
@@ -90,6 +97,15 @@ public:
     bool was_moved() const { return moved; }
 };
 
+class throw_from_copying_t
+{
+public:
+    throw_from_copying_t(int) { }
+
+    throw_from_copying_t(const throw_from_copying_t &) { throw "copy ctor"; }
+    throw_from_copying_t &operator=(const throw_from_copying_t &)
+    { throw "copy operator"; }
+};
 
 struct dummy_mutex
 {

@@ -1,13 +1,13 @@
-#ifndef NODE_H
-#define NODE_H
+#ifndef PORT_H
+#define PORT_H
 
-#include "address.h"
-#include "logic_time.h"
-#include "message.h"
 #include <sstream>
-#include <deque>
+#include <memory>
+#include "node.h"
 
 namespace ultra {
+
+class port_message;
 
 enum class openmode : int {
     app = std::ios_base::app,
@@ -19,44 +19,27 @@ enum class openmode : int {
     inout = std::ios_base::in | std::ios_base::out
 };
 
-class port : public std::stringstream, public std::enable_shared_from_this<port>
+class port : public node, public std::stringstream
 {
-    address _addr;
-    scalar_time _time;
-    ultra::openmode _om;
-
-    class notifier;
-    notifier *_notifier;
-
-    std::deque<std::weak_ptr<port>> _senders, _receivers;
+    class impl;
+    std::shared_ptr<impl> _impl;
 
 public:
-    explicit port(address a, ultra::openmode om);
+    explicit port(ultra::openmode om = ultra::openmode::inout,
+                  const address &a = address(),
+                  node *parent = nullptr);
     virtual ~port();
 
-    address get_address() const;
-    scalar_time time() const;
     ultra::openmode open_mode() const;
-    bool connect(const std::shared_ptr<port> &);
-    void disconnect(const std::shared_ptr<port> &);
+    bool connect(const port &);
+    void disconnect(const port &);
 
 protected:
-    virtual void message(const scalar_message_ptr &);
-    void post_message(scalar_message::msg_type type, const std::string &data = "");
+    void post_message(const std::string &data = "");
+    friend class port_message;
     friend class vm;
-
-    bool connect_sender(const std::shared_ptr<port> &asender);
-    bool connect_receiver(const std::shared_ptr<port> &areceiver);
-
-    void disconnect_sender(const std::shared_ptr<port> &asender);
-    void disconnect_receiver(const std::shared_ptr<port> &areceiver);
-
-    void disconnect_all_senders();
-    void disconnect_all_receivers();
 };
-
-using port_ptr = std::shared_ptr<port>;
 
 } // namespace ultra
 
-#endif // NODE_H
+#endif // PORT_H
