@@ -26,6 +26,7 @@ address::address(const std::initializer_list<int> &il)
 
 /*!
  * \brief Сравнивает два адреса между собой
+ *
  * \return true, если они равны.
  */
 bool address::operator==(const address &o) const
@@ -36,6 +37,7 @@ bool address::operator==(const address &o) const
 
 /*!
  * \brief Сравнивает два адреса между собой
+ *
  * \return true, если они не равны.
  */
 bool address::operator!=(const address &o) const

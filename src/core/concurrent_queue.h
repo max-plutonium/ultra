@@ -97,12 +97,14 @@ namespace details {
 template <typename Tp, typename Lock, typename Alloc = std::allocator<Tp>>
 class concurrent_queue : protected details::basic_forward_queue<Tp, Alloc>
 {
+#ifndef DOXYGEN
     static_assert(std::is_copy_constructible<Tp>::value
                   || std::is_move_constructible<Tp>::value,
         "concurrent_queue requires copyable or movable template argument");
 
     static_assert(is_lockable<Lock>::value,
         "concurrent_queue only works with lockable type");
+#endif
 
     using _base = details::basic_forward_queue<Tp, Alloc>;
 
@@ -134,13 +136,18 @@ public:
     concurrent_queue &operator=(concurrent_queue const&);
 
     // Можно конструировать и присваивать из любых совместимых типов
+
+    /// \copydoc concurrent_queue(const concurrent_queue &other)
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue(concurrent_queue<Tp2, Lock2, Alloc2> const&);
+
+    /// \copydoc concurrent_queue::operator=(const concurrent_queue &other)
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue &operator=(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
     concurrent_queue &append(concurrent_queue&&);
 
+    /// \copydoc append
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue &append(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
@@ -153,24 +160,29 @@ public:
     concurrent_queue &operator=(concurrent_queue &&other) noexcept
     { concurrent_queue(std::move(other)).swap(*this); return *this; }
 
+    /// \copydoc concurrent_queue(concurrent_queue &&other)
   template <typename Lock2>
     concurrent_queue(concurrent_queue<Tp, Lock2, Alloc> &&other) noexcept
         : concurrent_queue() { swap(other); }
 
+    /// \copydoc operator=(concurrent_queue &&other)
   template <typename Lock2>
     concurrent_queue &operator=(concurrent_queue<Tp, Lock2, Alloc> &&other) noexcept
     { concurrent_queue(std::move(other)).swap(*this); return *this; }
 
+#ifndef DOXYGEN
     // Нельзя перемещать из других типов
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue(concurrent_queue<Tp2, Lock2, Alloc2>&&) = delete;
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue &operator=(concurrent_queue<Tp2, Lock2, Alloc2>&&) = delete;
+#endif
 
     /// Возвращает true, если мгновенный размер очереди равен нулю
     inline bool empty() const noexcept
     { std::lock_guard<Lock> lk(_lock); return !_base::_impl.last; }
 
+    /// Очищает содержимое очереди
     inline void clear() noexcept
     { concurrent_queue<Tp, Lock, Alloc>().swap(*this); }
 
@@ -185,10 +197,12 @@ public:
 
     inline bool dequeue(value_type &val);
 
+    /// \copydoc enqueue
   template <typename... Args>
     inline bool push(Args&&... args)
     { return enqueue(std::forward<Args>(args)...); }
 
+    /// \copydoc dequeue
     inline bool pop(value_type &val)
     { return dequeue(val); }
 
@@ -197,10 +211,12 @@ public:
 
     inline bool dequeue_unsafe(value_type &val);
 
+    /// \copydoc enqueue_unsafe
   template <typename... Args>
     inline bool push_unsafe(Args&&... args)
     { return enqueue_unsafe(std::forward<Args>(args)...); }
 
+    /// \copydoc dequeue_unsafe
     inline bool pop_unsafe(value_type &val)
     { return dequeue_unsafe(val); }
 
@@ -213,6 +229,6 @@ public:
 
 } // namespace ultra
 
-#include "concurrent_queue.tpp"
+#include "concurrent_queue.ipp"
 
 #endif // CONCURRENT_QUEUE_H

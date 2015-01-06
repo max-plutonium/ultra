@@ -97,7 +97,7 @@ PUBLIC_HEADERS -= $$PRIVATE_HEADERS
 
 SOURCES += \
     address.cpp \
-    core/concurrent_queue.tpp \
+    core/concurrent_queue.ipp \
     core/result.cpp \
     core/system.cpp \
     core/thread_pool.cpp \
@@ -125,4 +125,5 @@ target.path = ../lib
 INSTALLS += target headerTarget
 
 DISTFILES += \
-    msg.proto
+    msg.proto \
+    ../examples/concurrent_queue.cpp

@@ -3,9 +3,11 @@
 namespace ultra { namespace core {
 
 /*! \internal
- *  \brief  Создает узел очереди по переданным аргументам
- *  \param  args    Список параметров, передающийся в конструктор узла.
- *  \return Адрес сконструированного узла.
+ * \brief Создает узел очереди по переданным аргументам
+ *
+ * \param args Список параметров, передающийся в конструктор узла.
+ *
+ * \return Адрес сконструированного узла.
  */
   template <typename Tp, typename Alloc>
       template<typename... Args>
@@ -21,7 +23,7 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  Встраивает узел по адресу \a p в конец очереди
+ * Встраивает узел по адресу \a p в конец очереди
  */
   template <typename Tp, typename Alloc>
     void
@@ -36,8 +38,9 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  \brief  Вынимает следующий узел из очереди
- *  \return Адрес отцепленного узла.
+ * \brief Вынимает следующий узел из очереди
+ *
+ * \return Адрес отцепленного узла.
  */
   template <typename Tp, typename Alloc>
     auto
@@ -54,8 +57,9 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  \brief  Последовательно выцепляет и уничтожает узлы из списка
- *  \note   Не делает никаких блокировок.
+ * \brief Последовательно выцепляет и уничтожает узлы из списка
+ *
+ * \note Не делает никаких блокировок.
  */
   template <typename Tp, typename Alloc>
     void
@@ -65,9 +69,10 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  \brief  Копирует себе содержимое очереди \a other
- *  \note   Если во время копирования элементов возникнет исключение,
- *  оставляет очередь в первоначальном состоянии.
+ * \brief Копирует себе содержимое очереди \a other
+ *
+ * \note Если во время копирования элементов возникнет исключение,
+ * оставляет очередь в первоначальном состоянии.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename Tp2, typename Lock2, typename Alloc2>
@@ -108,8 +113,8 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  \brief Добавляет к себе содержимое очереди \a other
- *  перемещением элементов с помощью простого обмена указателей
+ * \brief Добавляет к себе содержимое очереди \a other
+ * перемещением элементов с помощью простого обмена указателей
  */
   template <typename Tp, typename Lock, typename Alloc>
     void
@@ -128,8 +133,9 @@ namespace ultra { namespace core {
     }
 
 /*! \internal
- *  \brief Добавляет к себе содержимое очереди \a other копированием элементов
- *  \note  Исходная очередь остается в первоначальном состоянии.
+ * \brief Добавляет к себе содержимое очереди \a other копированием элементов
+ *
+ * \note Исходная очередь остается в первоначальном состоянии.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename Tp2, typename Lock2, typename Alloc2>
@@ -183,9 +189,10 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Копирует к себе содержимое очереди \a other
- *  \note   При создании узлов может бросать исключение,
- *  в этом случае очередь остается пустой.
+ * \brief Копирует к себе содержимое очереди \a other
+ *
+ * \note При создании узлов может бросать исключение,
+ * в этом случае очередь остается пустой.
  */
   template <typename Tp, typename Lock, typename Alloc>
     concurrent_queue<Tp, Lock, Alloc>::
@@ -196,10 +203,11 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Очищает свое содержимое и копирует к себе
- *  содержимое очереди \a other
- *  \note   При создании узлов может бросать исключение,
- *  в этом случае очередь остается нетронутой.
+ * \brief Очищает свое содержимое и копирует к себе
+ * содержимое очереди \a other
+ *
+ * \note При создании узлов может бросать исключение,
+ * в этом случае очередь остается нетронутой.
  */
   template <typename Tp, typename Lock, typename Alloc>
     concurrent_queue<Tp, Lock, Alloc> &
@@ -222,7 +230,7 @@ namespace ultra { namespace core {
         _assign(other);
     }
 
-/*! \copydoc concurrent_queue &concurrent_queue::operator=(const concurrent_queue &other)
+/*! \copydoc concurrent_queue::operator=(const concurrent_queue &other)
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Tp2, typename Lock2, typename Alloc2>
@@ -234,7 +242,7 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief Добавляет к себе содержимое очереди \a other перемещением элементов
+ * \brief Добавляет к себе содержимое очереди \a other перемещением элементов
  */
   template <typename Tp, typename Lock, typename Alloc>
     concurrent_queue<Tp, Lock, Alloc> &
@@ -245,8 +253,9 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief Добавляет к себе содержимое очереди \a other копированием элементов
- *  \note  Исходная очередь остается в первоначальном состоянии.
+ * \brief Добавляет к себе содержимое очереди \a other копированием элементов
+ *
+ * \note Исходная очередь остается в первоначальном состоянии.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Tp2, typename Lock2, typename Alloc2>
@@ -258,7 +267,7 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Обменивает содержимое очереди с \a other
+ * \brief Обменивает содержимое очереди с \a other
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Lock2>
@@ -272,8 +281,9 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Обменивает содержимое очереди с \a other
- *  \note   Не делает никаких блокировок.
+ * \brief Обменивает содержимое очереди с \a other
+ *
+ * \note Не делает никаких блокировок.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Lock2>
@@ -285,9 +295,12 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Конструирует элемент по переданному списку параметров
- *          и добавляет его в очередь
- *  \return Возвращает true, если успешно.
+ * \brief Конструирует элемент по переданному списку параметров
+ * и добавляет его в очередь
+ *
+ * \snippet concurrent_queue.cpp enqueue
+ *
+ * \return Возвращает true, если успешно.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename... Args>
@@ -307,9 +320,12 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Берет следующий элемент из очереди и передает
- *          его по ссылке в \a val, если очередь не пуста
- *  \return false, если очередь уже пуста, иначе true.
+ * \brief Берет следующий элемент из очереди и передает его по ссылке
+ * в \a val, если очередь не пуста
+ *
+ * \snippet concurrent_queue.cpp dequeue
+ *
+ * \return false, если очередь уже пуста, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
     bool
@@ -331,9 +347,10 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Конструирует элемент по переданному списку параметров
- *          и добавляет его в очередь, не производя никаких блокировок
- *  \return Возвращает true, если успешно.
+ * \brief Конструирует элемент по переданному списку параметров и
+ * добавляет его в очередь, не производя никаких блокировок
+ *
+ * \return Возвращает true, если успешно.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename... Args>
@@ -351,10 +368,10 @@ namespace ultra { namespace core {
     }
 
 /*!
- *  \brief  Берет следующий элемент из очереди, не производя
- *          никаких блокировок, и передает его по ссылке в
- *          \a val, если очередь не пуста
- *  \return false, если очередь уже пуста, иначе true.
+ * \brief Берет следующий элемент из очереди, не производя никаких
+ * блокировок, и передает его по ссылке в \a val, если очередь не пуста
+ *
+ * \return false, если очередь уже пуста, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
     bool
