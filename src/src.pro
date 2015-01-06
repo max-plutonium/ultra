@@ -88,7 +88,8 @@ HEADERS += \
     node.h \
     core/core_p.h \
     device.h \
-    interp.h
+    interp.h \
+    field.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -112,7 +113,8 @@ SOURCES += \
     node.cpp \
     core/core.cpp \
     device.cpp \
-    interp.cpp
+    interp.cpp \
+    field.cpp
 
 ### Install settings ###
 

@@ -48,8 +48,6 @@ public:
 //    friend std::istream &operator>>(std::istream &i, message &msg);
 };
 
-using message_ptr = std::shared_ptr<port_message>;
-
 //std::ostream &operator<<(std::ostream &o, const message &msg);
 //std::istream &operator>>(std::istream &i, message &msg);
 

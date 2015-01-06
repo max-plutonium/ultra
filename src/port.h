@@ -35,10 +35,11 @@ public:
     void disconnect(const port &);
 
 protected:
-    void post_message(const std::string &data = "");
     friend class port_message;
     friend class vm;
 };
+
+using port_ptr = std::shared_ptr<port>;
 
 } // namespace ultra
 

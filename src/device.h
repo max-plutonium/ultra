@@ -21,7 +21,10 @@ public:
     // task interface
 private:
     virtual void run() = 0;
+    friend class field;
 };
+
+using device_ptr = std::shared_ptr<device>;
 
 } // namespace ultra
 
