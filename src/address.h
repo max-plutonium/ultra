@@ -7,6 +7,9 @@
 
 namespace ultra {
 
+    /*!
+     * \brief Адрес, используемый для поиска и доступа к элементам библиотеки
+     */
     struct address
     {
         constexpr address() noexcept = default;
@@ -16,25 +19,28 @@ namespace ultra {
         bool operator==(const address &o) const;
         bool operator!=(const address &o) const;
 
-        inline int cluster() const { return _cluster; }
-        inline int space() const { return _space; }
-        inline int field() const { return _field; }
-        inline int node() const { return _node; }
-        inline void set_cluster(int acluster) { _cluster = acluster; }
-        inline void set_space(int aspace) { _space = aspace; }
-        inline void set_field(int afield) { _field = afield; }
-        inline void set_node(int anode) { _node = anode; }
+        inline int cluster() const;
+        inline int space() const;
+        inline int field() const;
+        inline int node() const;
+        inline void set_cluster(int acluster);
+        inline void set_space(int aspace);
+        inline void set_field(int afield);
+        inline void set_node(int anode);
 
     private:
         int _cluster = 0, _space = 0, _field = 0, _node = 0;
 
-        friend std::ostream &operator<<(std::ostream &o, const address &msg);
-        friend std::istream &operator>>(std::istream &i, address &msg);
+        friend std::ostream &operator<<(std::ostream &o, const address &a);
+        friend std::istream &operator>>(std::istream &i, address &a);
     };
 
-    std::ostream &operator<<(std::ostream &o, const address &msg);
-    std::istream &operator>>(std::istream &i, address &msg);
+    std::ostream &operator<<(std::ostream &o, const address &a);
+    std::istream &operator>>(std::istream &i, address &a);
 
+    /*!
+     * \brief Функтор для хеширования объектов класса \c address
+     */
     struct address_hash
     {
         std::size_t operator()(const address &c) const;

@@ -9,6 +9,9 @@ namespace ultra { namespace core {
 
 namespace details {
 
+    /*!
+     * \internal
+     */
   template <typename Tp, typename Alloc>
     struct basic_forward_queue
     {
@@ -81,7 +84,16 @@ namespace details {
 
 } // namespace details
 
-
+/*!
+ * \brief Потокобезопасная блокирующая очередь
+ *
+ * Представляет собой простой односвязный список, операции над которым
+ * сериализованы с помощью блокировки.
+ *
+ * \tparam Tp Класс хранимых объектов.
+ * \tparam Lock Класс блокировки.
+ * \tparam Alloc Аллокатор, который будет использован для выделения памяти.
+ */
 template <typename Tp, typename Lock, typename Alloc = std::allocator<Tp>>
 class concurrent_queue : protected details::basic_forward_queue<Tp, Alloc>
 {
