@@ -4,17 +4,17 @@
 
 namespace ultra {
 
-address::address(int ax, int ay, int az) noexcept
-    : _x(ax), _y(ay), _z(az)
+address::address(int cluster, int field, int node) noexcept
+    : _cluster(cluster), _field(field), _node(node)
 { }
 
 address::address(const std::initializer_list<int> &il)
-    : _x(il.begin()[0]), _y(il.begin()[1]), _z(il.begin()[2])
+    : _cluster(il.begin()[0]), _field(il.begin()[1]), _node(il.begin()[2])
 { }
 
 bool address::operator==(const address &o) const
 {
-    return (_x == o._x && _y == o._y && _z == o._z);
+    return (_cluster == o._cluster && _field == o._field && _node == o._node);
 }
 
 bool address::operator!=(const address &o) const
@@ -25,18 +25,18 @@ bool address::operator!=(const address &o) const
 std::size_t address_hash::operator()(const address &c) const
 {
     std::size_t seed = 0;
-    boost::hash_combine(seed, c.x());
-    boost::hash_combine(seed, c.y());
-    boost::hash_combine(seed, c.z());
+    boost::hash_combine(seed, c.cluster());
+    boost::hash_combine(seed, c.field());
+    boost::hash_combine(seed, c.node());
     return seed;
 }
 
 std::ostream &operator<<(std::ostream &o, const address &msg)
 {
     internal::address int_address;
-    int_address.set_x(msg.x());
-    int_address.set_y(msg.y());
-    int_address.set_z(msg.z());
+    int_address.set_cluster(msg.cluster());
+    int_address.set_field(msg.field());
+    int_address.set_node(msg.node());
     int_address.SerializeToOstream(&o);
     return o;
 }
@@ -45,9 +45,9 @@ std::istream &operator>>(std::istream &i, address &msg)
 {
     internal::address int_address;
     int_address.ParseFromIstream(&i);
-    msg._x = int_address.x();
-    msg._y = int_address.y();
-    msg._z = int_address.z();
+    msg._cluster = int_address.cluster();
+    msg._field = int_address.field();
+    msg._node = int_address.node();
     return i;
 }
 

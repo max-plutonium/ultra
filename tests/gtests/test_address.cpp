@@ -22,27 +22,27 @@ public:
 
 TEST_F(test_address, complex)
 {
-    int x  = std::get<0>(colums),
-        y  = std::get<1>(colums),
-        z  = std::get<2>(colums),
-        x2 = std::get<3>(colums),
-        y2 = std::get<4>(colums),
-        z2 = std::get<5>(colums);
+    int cluster  = std::get<0>(colums),
+        field  = std::get<1>(colums),
+        node  = std::get<2>(colums),
+        cluster2 = std::get<3>(colums),
+        field2 = std::get<4>(colums),
+        node2 = std::get<5>(colums);
 
     ultra::address addr1;
-    EXPECT_EQ(0, addr1.x());
-    EXPECT_EQ(0, addr1.y());
-    EXPECT_EQ(0, addr1.z());
+    EXPECT_EQ(0, addr1.cluster());
+    EXPECT_EQ(0, addr1.field());
+    EXPECT_EQ(0, addr1.node());
 
-    ultra::address addr2(x, y, z);
-    EXPECT_EQ(x, addr2.x());
-    EXPECT_EQ(y, addr2.y());
-    EXPECT_EQ(z, addr2.z());
+    ultra::address addr2(cluster, field, node);
+    EXPECT_EQ(cluster, addr2.cluster());
+    EXPECT_EQ(field, addr2.field());
+    EXPECT_EQ(node, addr2.node());
 
-    ultra::address addr3 = { x2, y2, z2 };
-    EXPECT_EQ(x2, addr3.x());
-    EXPECT_EQ(y2, addr3.y());
-    EXPECT_EQ(z2, addr3.z());
+    ultra::address addr3 = { cluster2, field2, node2 };
+    EXPECT_EQ(cluster2, addr3.cluster());
+    EXPECT_EQ(field2, addr3.field());
+    EXPECT_EQ(node2, addr3.node());
 
     ultra::address addr4(addr2); // copy ctor
     addr1 = addr3;               // copy assign
@@ -54,12 +54,12 @@ TEST_F(test_address, complex)
     EXPECT_TRUE(addr1 != addr2);
     EXPECT_TRUE(addr3 != addr4);
 
-    addr1.set_x(x);
-    addr1.set_y(y);
-    addr1.set_z(z);
-    EXPECT_EQ(x, addr1.x());
-    EXPECT_EQ(y, addr1.y());
-    EXPECT_EQ(z, addr1.z());
+    addr1.set_cluster(cluster);
+    addr1.set_field(field);
+    addr1.set_node(node);
+    EXPECT_EQ(cluster, addr1.cluster());
+    EXPECT_EQ(field, addr1.field());
+    EXPECT_EQ(node, addr1.node());
     EXPECT_TRUE(addr1 != addr3);
     EXPECT_TRUE(addr1 == addr2);
     EXPECT_TRUE(addr1 == addr4);
