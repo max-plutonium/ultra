@@ -10,21 +10,23 @@ namespace ultra {
     struct address
     {
         constexpr address() noexcept = default;
-        address(int cluster, int field, int node) noexcept;
+        address(int cluster, int space, int field, int node) noexcept;
         address(const std::initializer_list<int> &il);
 
         bool operator==(const address &o) const;
         bool operator!=(const address &o) const;
 
         inline int cluster() const { return _cluster; }
+        inline int space() const { return _space; }
         inline int field() const { return _field; }
         inline int node() const { return _node; }
-        inline void set_cluster(int ax) { _cluster = ax; }
-        inline void set_field(int ay) { _field = ay; }
-        inline void set_node(int az) { _node = az; }
+        inline void set_cluster(int acluster) { _cluster = acluster; }
+        inline void set_space(int aspace) { _space = aspace; }
+        inline void set_field(int afield) { _field = afield; }
+        inline void set_node(int anode) { _node = anode; }
 
     private:
-        int _cluster = 0, _field = 0, _node = 0;
+        int _cluster = 0, _space = 0, _field = 0, _node = 0;
 
         friend std::ostream &operator<<(std::ostream &o, const address &msg);
         friend std::istream &operator>>(std::istream &i, address &msg);

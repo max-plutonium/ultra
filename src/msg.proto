@@ -2,8 +2,9 @@ package ultra.internal;
 
 message address {
     required int32 cluster = 1;
-    required int32 field = 2;
-    required int32 node = 3;
+    required int32 space = 2;
+    required int32 field = 3;
+    required int32 node = 4;
 }
 
 message scalar_time {
