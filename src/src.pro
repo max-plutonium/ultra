@@ -82,9 +82,13 @@ HEADERS += \
     logic_time.h \
     message.h \
     core/grid.h \
-    execution_service.h \
+    core/execution_service.h \
     core/ioservice_pool.h \
-    port.h
+    port.h \
+    node.h \
+    core/core_p.h \
+    device.h \
+    interp.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -102,9 +106,13 @@ SOURCES += \
     logic_time.cpp \
     message.cpp \
     core/grid.cpp \
-    execution_service.cpp \
+    core/execution_service.cpp \
     core/ioservice_pool.cpp \
-    port.cpp
+    port.cpp \
+    node.cpp \
+    core/core.cpp \
+    device.cpp \
+    interp.cpp
 
 ### Install settings ###
 

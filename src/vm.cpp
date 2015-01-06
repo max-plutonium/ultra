@@ -12,9 +12,9 @@ namespace ultra {
 /************************************************************************************
     vm::impl
  ***********************************************************************************/
-vm::impl::impl(std::size_t num_threads, std::size_t num_ios,
+vm::impl::impl(int cluster, std::size_t num_threads, std::size_t num_ios,
                const std::string &address, const std::string &port)
-    : core::ioservice_pool(num_ios), _pool(num_threads)
+    : core::ioservice_pool(num_ios), _cluster(cluster), _pool(num_threads)
     , _addr(address), _port(port), _signals(next_io_service())
     , _acceptor(next_io_service())
 {
@@ -71,6 +71,7 @@ vm::vm(int argc, const char **argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("cluster,c", po::value<int>(), "number of cluster")
         ("num-threads,t", po::value<std::size_t>(), "number of threads")
         ("num-reactors,r", po::value<std::size_t>(), "number of reactors")
         ("address,a", po::value<std::string>(), "ip address")
@@ -88,6 +89,7 @@ vm::vm(int argc, const char **argv)
     std::size_t num_ios = 1;
     std::string addr = "127.0.0.1";
     std::string port = "80";
+    int cluster = 0;
 
     if (vm.count("num-threads"))
         num_threads = vm["num-threads"].as<std::size_t>();
@@ -101,7 +103,10 @@ vm::vm(int argc, const char **argv)
     if (vm.count("port"))
         port = vm["port"].as<std::string>();
 
-    d = new impl(num_threads, num_ios, addr, port);
+    if (vm.count("cluster"))
+        cluster = vm["cluster"].as<int>();
+
+    d = new impl(cluster, num_threads, num_ios, addr, port);
 
     if(argc) {
         using namespace boost::asio;

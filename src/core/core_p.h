@@ -13,6 +13,8 @@ namespace ultra {
 
 struct vm::impl : core::ioservice_pool
 {
+    int _cluster;
+
     core::thread_pool<core::prio_scheduler> _pool;
 
     std::string _addr, _port;
@@ -26,7 +28,7 @@ struct vm::impl : core::ioservice_pool
 
     static inline vm::impl *get() { return vm::instance()->d; }
 
-    impl(std::size_t num_threads, std::size_t num_ios,
+    impl(int cluster, std::size_t num_threads, std::size_t num_ios,
          const std::string &address, const std::string &port);
 
     void start_accept();
