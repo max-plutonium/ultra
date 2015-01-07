@@ -126,7 +126,7 @@ public:
     MOCK_METHOD0(unlock, void());
 };
 
-#include "../../src/task.h"
+#include "../../src/ultra.h"
 
 class mock_task : public ultra::task
 {

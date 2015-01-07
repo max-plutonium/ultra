@@ -2,7 +2,7 @@
 #include "mock_types.h"
 #include <chrono>
 
-struct mock_scheduler : ultra::core::scheduler
+struct mock_scheduler : ultra::scheduler
 {
     MOCK_METHOD1(push, void (ultra::task_ptr));
     MOCK_METHOD1(schedule, ultra::task_ptr (std::chrono::milliseconds));
@@ -78,7 +78,7 @@ TYPED_TEST_CASE(typed_test_thread_pool, test_types);
 
 TYPED_TEST(typed_test_thread_pool, schedule_function_nosleep)
 {
-    TestFixture::pool.execute_callable(
+    TestFixture::pool.execute_callable(0,
                 &typed_test_thread_pool<TypeParam>::test_function_nosleep, this);
 
     TestFixture::pool.wait_for_done();
@@ -90,21 +90,21 @@ TYPED_TEST(typed_test_thread_pool, schedule_function_multiple)
     const int runs = 10;
 
     for(int i = 0; i < runs; ++i)
-        TestFixture::pool.execute_callable(
+        TestFixture::pool.execute_callable(0,
                 &typed_test_thread_pool<TypeParam>::test_function_sleep, this, 10);
 
     TestFixture::pool.wait_for_done();
     EXPECT_EQ(std::size_t(runs), TestFixture::_run_count);
 
     for(int i = 0; i < runs; ++i)
-        TestFixture::pool.execute_callable(
+        TestFixture::pool.execute_callable(0,
                 &typed_test_thread_pool<TypeParam>::test_function_nosleep, this);
 
     TestFixture::pool.wait_for_done();
     EXPECT_EQ(std::size_t(runs * 2), TestFixture::_run_count);
 
     for(int i = 0; i < 5000; ++i)
-        TestFixture::pool.execute_callable(
+        TestFixture::pool.execute_callable(0,
                 &typed_test_thread_pool<TypeParam>::test_function_empty, this);
 
     TestFixture::pool.wait_for_done();
@@ -115,7 +115,7 @@ TYPED_TEST(typed_test_thread_pool, wait_for_done)
     const int runs = 1000;
 
     for(int i = 0; i < runs; ++i) {
-        TestFixture::pool.execute_callable(
+        TestFixture::pool.execute_callable(0,
             &typed_test_thread_pool<TypeParam>::test_function_nosleep, this);
     }
 

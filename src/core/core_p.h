@@ -1,13 +1,14 @@
 #ifndef CORE_P_H
 #define CORE_P_H
 
+#include <boost/asio.hpp>
+
 #include "../vm.h"
 #include "core/ioservice_pool.h"
 #include "core/thread_pool.h"
-#include "core/concurrent_queue.h"
 #include "node.h"
 #include "message.h"
-#include <boost/asio.hpp>
+#include "system.h"
 
 namespace ultra {
 
@@ -60,10 +61,6 @@ public:
     void disconnect_all_senders();
     void disconnect_all_receivers();
 };
-
-namespace core {
-
-} // namespace core
 
 } // namespace ultra
 

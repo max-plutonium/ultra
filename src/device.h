@@ -2,7 +2,7 @@
 #define DEVICE_H
 
 #include "port.h"
-#include "task.h"
+#include "ultra.h"
 
 namespace ultra {
 

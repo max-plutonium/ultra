@@ -1,7 +1,7 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#include "execution_service.h"
+#include "schedulers.h"
 #include <list>
 #include <unordered_set>
 
@@ -91,21 +91,25 @@ public:
     thread_pool(std::size_t max_threads = std::thread::hardware_concurrency())
         : thread_pool_base(std::make_shared<Scheduler>(), max_threads) { }
 
-  template <typename Callable, typename... Args>
-      std::future<typename std::result_of<Callable (Args...)>::type>
-    execute_callable(Callable &&fun, Args &&...args)
+  template <typename Res, typename... Args>
+      std::future<Res>
+    execute_callable(int prio, action<Res (Args...)> &&fun)
     {
-        using result_type = typename std::result_of<Callable(Args...)>::type;
-        using task_type = function_task<Callable, Args...>;
-
-        task_ptr ptask = std::make_shared<task_type>(
-                std::forward<Callable>(fun), std::forward<Args>(args)...);
-        std::future<result_type> ret
-                = std::static_pointer_cast<task_type>(ptask)->get_future();
+        using task_type = function_task<Res (Args...)>;
+        auto ptask = std::make_shared<task_type>(prio, std::move(fun));
+        std::future<Res> ret = ptask->get_future();
 
         execute(std::move(ptask));
         return ret;
     }
+
+  template <typename Function, typename... Args>
+      auto
+    execute_callable(int prio, Function &&fun, Args &&...args)
+      {
+          return execute_callable(prio,
+            core::make_action(std::forward<Function>(fun), std::forward<Args>(args)...));
+      }
 };
 
 } // namespace core

@@ -74,7 +74,6 @@ HEADERS += \
     core/result.h \
     core/system.h \
     core/thread_pool.h \
-    task.h \
     ultra.h \
     ultra_global.h \
     vm.h \
@@ -82,14 +81,14 @@ HEADERS += \
     logic_time.h \
     message.h \
     core/grid.h \
-    core/execution_service.h \
     core/ioservice_pool.h \
     port.h \
     node.h \
     core/core_p.h \
     device.h \
     interp.h \
-    field.h
+    field.h \
+    core/schedulers.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -101,20 +100,19 @@ SOURCES += \
     core/result.cpp \
     core/system.cpp \
     core/thread_pool.cpp \
-    task.cpp \
     ultra.cpp \
     vm.cpp \
     logic_time.cpp \
     message.cpp \
     core/grid.cpp \
-    core/execution_service.cpp \
     core/ioservice_pool.cpp \
     port.cpp \
     node.cpp \
     core/core.cpp \
     device.cpp \
     interp.cpp \
-    field.cpp
+    field.cpp \
+    core/schedulers.cpp
 
 ### Install settings ###
 
@@ -126,4 +124,4 @@ INSTALLS += target headerTarget
 
 DISTFILES += \
     msg.proto \
-    ../examples/concurrent_queue.cpp
+    ../examples/core/concurrent_queue.cpp

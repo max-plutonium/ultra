@@ -1,7 +1,7 @@
 #include "core/core_p.h"
 #include "port.h"
 #include "message.h"
-#include "core/concurrent_queue.h"
+#include "core/action.h"
 
 #include <functional>
 #include <boost/program_options.hpp>
@@ -122,7 +122,7 @@ vm::vm(int argc, const char **argv)
         d->_acceptor.listen();
 
         d->_pool.reserve_thread();
-        d->_pool.execute_callable(&impl::start_accept, d);
+        d->_pool.execute_callable(1, core::make_action(&impl::start_accept, d));
     }
 }
 
