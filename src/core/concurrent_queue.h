@@ -114,7 +114,8 @@ class concurrent_queue : protected details::basic_forward_queue<Tp, Alloc>
   template <typename Tp2, typename Lock2, typename Alloc2>
     void _assign(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
-    void _append(concurrent_queue&&);
+  template <typename Lock2>
+    void _append(concurrent_queue<Tp, Lock2, Alloc> &&);
 
     // Можно добавлять очереди с любыми совместимыми типами
   template <typename Tp2, typename Lock2, typename Alloc2>
@@ -145,7 +146,9 @@ public:
   template <typename Tp2, typename Lock2, typename Alloc2>
     concurrent_queue &operator=(concurrent_queue<Tp2, Lock2, Alloc2> const&);
 
-    concurrent_queue &append(concurrent_queue&&);
+    /// \brief Добавляет к себе содержимое очереди \a other перемещением элементов
+  template <typename Lock2>
+    concurrent_queue &append(concurrent_queue<Tp, Lock2, Alloc> &&other);
 
     /// \copydoc append
   template <typename Tp2, typename Lock2, typename Alloc2>

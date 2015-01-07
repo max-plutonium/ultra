@@ -19,14 +19,14 @@ namespace ultra {
         bool operator==(const address &o) const;
         bool operator!=(const address &o) const;
 
-        inline int cluster() const;
-        inline int space() const;
-        inline int field() const;
-        inline int node() const;
-        inline void set_cluster(int acluster);
-        inline void set_space(int aspace);
-        inline void set_field(int afield);
-        inline void set_node(int anode);
+        int cluster() const;
+        int space() const;
+        int field() const;
+        int node() const;
+        void set_cluster(int acluster);
+        void set_space(int aspace);
+        void set_field(int afield);
+        void set_node(int anode);
 
     private:
         int _cluster = 0, _space = 0, _field = 0, _node = 0;

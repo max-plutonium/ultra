@@ -2,11 +2,12 @@
 
 namespace ultra { namespace core {
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Создает узел очереди по переданным аргументам
  *
  * \param args Список параметров, передающийся в конструктор узла.
- *
  * \return Адрес сконструированного узла.
  */
   template <typename Tp, typename Alloc>
@@ -22,7 +23,9 @@ namespace ultra { namespace core {
         return node;
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * Встраивает узел по адресу \a p в конец очереди
  */
   template <typename Tp, typename Alloc>
@@ -37,7 +40,9 @@ namespace ultra { namespace core {
         _impl.last = p;
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Вынимает следующий узел из очереди
  *
  * \return Адрес отцепленного узла.
@@ -56,7 +61,9 @@ namespace ultra { namespace core {
         return node;
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Последовательно выцепляет и уничтожает узлы из списка
  *
  * \note Не делает никаких блокировок.
@@ -68,7 +75,9 @@ namespace ultra { namespace core {
         while(_unhook_next());
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Копирует себе содержимое очереди \a other
  *
  * \note Если во время копирования элементов возникнет исключение,
@@ -112,17 +121,20 @@ namespace ultra { namespace core {
         swap_unsafe(temp);
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Добавляет к себе содержимое очереди \a other
  * перемещением элементов с помощью простого обмена указателей
  */
   template <typename Tp, typename Lock, typename Alloc>
+      template <typename Lock2>
     void
     concurrent_queue<Tp, Lock, Alloc>::
-    _append(concurrent_queue<Tp, Lock, Alloc> &&other)
+    _append(concurrent_queue<Tp, Lock2, Alloc> &&other)
     {
         // to protect deadlocks
-        ordered_lock<Lock, Lock> locker { _lock, other._lock };
+        ordered_lock<Lock, Lock2> locker { _lock, other._lock };
         if(this->_impl.last)
             this->_impl.last->next = other._impl.next;
         else
@@ -132,7 +144,9 @@ namespace ultra { namespace core {
         other._impl.last = nullptr;
     }
 
-/*! \internal
+/*!
+ * \internal
+ *
  * \brief Добавляет к себе содержимое очереди \a other копированием элементов
  *
  * \note Исходная очередь остается в первоначальном состоянии.
@@ -172,14 +186,16 @@ namespace ultra { namespace core {
         _append(std::move(temp));
     }
 
-/*! Конструктор очереди, инициализирует поля
+/*!
+ * \brief Конструктор очереди, инициализирует поля
  */
   template <typename Tp, typename Lock, typename Alloc>
     concurrent_queue<Tp, Lock, Alloc>::concurrent_queue() noexcept
     {
     }
 
-/*! Деструктор очереди
+/*!
+ * \brief Деструктор очереди
  */
   template <typename Tp, typename Lock, typename Alloc>
     concurrent_queue<Tp, Lock, Alloc>::~concurrent_queue() noexcept
@@ -219,7 +235,8 @@ namespace ultra { namespace core {
         return *this;
     }
 
-/*! \copydoc concurrent_queue(const concurrent_queue &other)
+/*!
+ * \copydoc concurrent_queue(const concurrent_queue &other)
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Tp2, typename Lock2, typename Alloc2>
@@ -230,7 +247,8 @@ namespace ultra { namespace core {
         _assign(other);
     }
 
-/*! \copydoc concurrent_queue::operator=(const concurrent_queue &other)
+/*!
+ * \copydoc concurrent_queue::operator=(const concurrent_queue &other)
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Tp2, typename Lock2, typename Alloc2>
@@ -245,9 +263,10 @@ namespace ultra { namespace core {
  * \brief Добавляет к себе содержимое очереди \a other перемещением элементов
  */
   template <typename Tp, typename Lock, typename Alloc>
+      template <typename Lock2>
     concurrent_queue<Tp, Lock, Alloc> &
     concurrent_queue<Tp, Lock, Alloc>::
-    append(concurrent_queue<Tp, Lock, Alloc> &&other)
+    append(concurrent_queue<Tp, Lock2, Alloc> &&other)
     {
         _append(std::move(other)); return *this;
     }
@@ -298,7 +317,7 @@ namespace ultra { namespace core {
  * \brief Конструирует элемент по переданному списку параметров
  * и добавляет его в очередь
  *
- * \snippet concurrent_queue.cpp enqueue
+ * \snippet core/concurrent_queue.cpp enqueue
  *
  * \return Возвращает true, если успешно.
  */
@@ -323,7 +342,7 @@ namespace ultra { namespace core {
  * \brief Берет следующий элемент из очереди и передает его по ссылке
  * в \a val, если очередь не пуста
  *
- * \snippet concurrent_queue.cpp dequeue
+ * \snippet core/concurrent_queue.cpp dequeue
  *
  * \return false, если очередь уже пуста, иначе true.
  */

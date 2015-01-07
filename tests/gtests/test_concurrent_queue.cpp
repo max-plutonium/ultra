@@ -336,12 +336,12 @@ TEST(test_concurrent_queue, append)
     ultra::core::concurrent_queue<std::string, dummy_mutex> q_string_dummy2;
     ultra::core::concurrent_queue<std::string, std::mutex> q_string_mutex2;
 
-    q_int_dummy2.append(q_int_dummy);
-    q_int_mutex2.append(q_int_mutex);
-    q_double_dummy2.append(q_double_dummy);
-    q_double_mutex2.append(q_double_mutex);
-    q_string_dummy2.append(q_string_dummy);
-    q_string_mutex2.append(q_string_mutex);
+    q_int_dummy2.append(q_int_mutex);
+    q_int_mutex2.append(q_int_dummy);
+    q_double_dummy2.append(q_double_mutex);
+    q_double_mutex2.append(q_double_dummy);
+    q_string_dummy2.append(q_string_mutex);
+    q_string_mutex2.append(q_string_dummy);
 
     EXPECT_FALSE(q_int_dummy.empty());
     EXPECT_FALSE(q_int_mutex.empty());
@@ -357,12 +357,12 @@ TEST(test_concurrent_queue, append)
     EXPECT_FALSE(q_string_dummy2.empty());
     EXPECT_FALSE(q_string_mutex2.empty());
 
-    q_int_dummy2.append(std::move(q_int_dummy));
-    q_int_mutex2.append(std::move(q_int_mutex));
-    q_double_dummy2.append(std::move(q_double_dummy));
-    q_double_mutex2.append(std::move(q_double_mutex));
-    q_string_dummy2.append(std::move(q_string_dummy));
-    q_string_mutex2.append(std::move(q_string_mutex));
+    q_int_dummy2.append(std::move(q_int_mutex));
+    q_int_mutex2.append(std::move(q_int_dummy));
+    q_double_dummy2.append(std::move(q_double_mutex));
+    q_double_mutex2.append(std::move(q_double_dummy));
+    q_string_dummy2.append(std::move(q_string_mutex));
+    q_string_mutex2.append(std::move(q_string_dummy));
 
     EXPECT_TRUE(q_int_dummy.empty());
     EXPECT_TRUE(q_int_mutex.empty());
