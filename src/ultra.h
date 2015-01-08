@@ -175,6 +175,12 @@ public:
     virtual void push(std::shared_ptr<task>) = 0;
 
     /*!
+     * \brief Помещает задачу в очередь, планируя её исполнение
+     * только после \a msecs миллисекунд
+     */
+    void push_delayed(std::shared_ptr<task>, std::size_t msecs);
+
+    /*!
      * \brief Возвращает задачу, которую надо исполнить, при этом
      * может ждать ее появления \a msecs миллисекунд
      */

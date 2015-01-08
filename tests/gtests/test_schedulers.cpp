@@ -104,3 +104,16 @@ TEST(test_schedulers, prio)
     EXPECT_EQ(t3, sched.schedule());
     EXPECT_EQ(t, sched.schedule());
 }
+
+#include "../../src/vm.h"
+
+TEST(test_schedulers, delayed_task)
+{
+    ultra::vm vm(0, nullptr);
+    core::prio_scheduler sched;
+
+    task_ptr t(new mock_task(-1));
+    sched.push_delayed(t, 100);
+    vm::instance()->loop();
+    return;
+}

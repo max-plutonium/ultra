@@ -12,7 +12,20 @@
 
 namespace ultra {
 
-struct vm::impl : core::ioservice_pool
+struct delayed_task : std::enable_shared_from_this<delayed_task>
+{
+    task_ptr _task;
+    boost::asio::deadline_timer _timer;
+    std::weak_ptr<scheduler> _sched;
+
+    delayed_task(const task_ptr &t, const std::weak_ptr<scheduler> &sched);
+    void start(std::size_t msecs);
+
+private:
+    void resume();
+};
+
+struct vm::impl : public core::ioservice_pool
 {
     int _cluster;
 
