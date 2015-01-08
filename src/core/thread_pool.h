@@ -7,8 +7,9 @@
 
 namespace ultra { namespace core {
 
-class thread_pool_base : public execution_service
+class thread_pool
 {
+    sched_ptr  _sched;
     std::atomic_bool _shutdown;
 
     enum worker_status {
@@ -25,8 +26,8 @@ class thread_pool_base : public execution_service
     std::chrono::milliseconds _waiting_task_timeout;
     std::chrono::milliseconds _expiry_timeout;
 
-    std::size_t _active_threads;
     std::size_t _nr_max_threads;
+    std::size_t _active_threads;
     std::size_t _nr_reserved;
     mutable std::mutex _lock;
     std::condition_variable _no_active_threads;
@@ -34,11 +35,11 @@ class thread_pool_base : public execution_service
     struct worker
     {
         sched_ptr _sched;
-        thread_pool_base *_pool;
+        thread_pool *_pool;
         worker_status _status;
         std::condition_variable _cond;
 
-        explicit worker(sched_ptr s, thread_pool_base *pool);
+        explicit worker(sched_ptr s, thread_pool *pool);
         virtual ~worker() = default;
         virtual void start(task_ptr t) = 0;
         virtual void join() = 0;
@@ -60,12 +61,13 @@ class thread_pool_base : public execution_service
 public:
     virtual void execute(task_ptr) final;
 
-    explicit thread_pool_base(sched_ptr s, std::size_t max_threads);
-    ~thread_pool_base();
-    thread_pool_base(const thread_pool_base&) = delete;
-    thread_pool_base(thread_pool_base&&) = delete;
-    thread_pool_base& operator=(const thread_pool_base&) = delete;
-    thread_pool_base& operator=(thread_pool_base&&) = delete;
+    explicit thread_pool(schedule_type st, std::size_t max_threads = -1);
+    explicit thread_pool(sched_ptr s, std::size_t max_threads = -1);
+    ~thread_pool();
+    thread_pool(const thread_pool&) = delete;
+    thread_pool(thread_pool&&) = delete;
+    thread_pool& operator=(const thread_pool&) = delete;
+    thread_pool& operator=(thread_pool&&) = delete;
 
     std::shared_ptr<scheduler> sched() const { return _sched; }
 
@@ -82,14 +84,6 @@ public:
     void reset();
     void clear();
     void shutdown();
-};
-
-template <typename Scheduler>
-class thread_pool : public thread_pool_base
-{
-public:
-    thread_pool(std::size_t max_threads = std::thread::hardware_concurrency())
-        : thread_pool_base(std::make_shared<Scheduler>(), max_threads) { }
 
   template <typename Res, typename... Args>
       std::future<Res>

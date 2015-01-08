@@ -21,7 +21,7 @@ TEST(test_thread_pool, schedule_simple)
     mock_task *mt = new mock_task;
     task_ptr ptask(mt);
 
-    core::thread_pool<mock_scheduler> pool(1);
+    core::thread_pool pool(std::make_shared<mock_scheduler>(), 1);
 
     EXPECT_EQ(std::size_t(0), pool.thread_count());
 
@@ -39,7 +39,7 @@ TEST(test_thread_pool, schedule_simple)
 template <typename Tp>
 struct typed_test_thread_pool : testing::Test
 {
-    ultra::core::thread_pool<Tp> pool;
+    ultra::core::thread_pool pool;
     std::atomic_size_t _run_count { 0 };
 
     void test_function_empty() { }
@@ -52,6 +52,8 @@ struct typed_test_thread_pool : testing::Test
         std::this_thread::sleep_for(std::chrono::milliseconds(msecs));
         ++_run_count;
     }
+
+    typed_test_thread_pool() : pool(std::make_shared<Tp>()) { }
 };
 
 struct expiry_timeout_task : ultra::task

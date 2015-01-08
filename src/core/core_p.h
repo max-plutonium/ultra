@@ -16,7 +16,8 @@ struct vm::impl : core::ioservice_pool
 {
     int _cluster;
 
-    core::thread_pool<core::prio_scheduler> _pool;
+    core::thread_pool _pool;
+    sched_ptr _scheduler;
 
     std::string _addr, _port;
 

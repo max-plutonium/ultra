@@ -14,9 +14,10 @@ namespace ultra {
  ***********************************************************************************/
 vm::impl::impl(int cluster, std::size_t num_threads, std::size_t num_ios,
                const std::string &address, const std::string &port)
-    : core::ioservice_pool(num_ios), _cluster(cluster), _pool(num_threads)
-    , _addr(address), _port(port), _signals(next_io_service())
-    , _acceptor(next_io_service())
+    : core::ioservice_pool(num_ios), _cluster(cluster)
+    , _pool(schedule_type::prio, num_threads)
+    , _scheduler(_pool.sched()), _addr(address), _port(port)
+    , _signals(next_io_service()), _acceptor(next_io_service())
 {
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
