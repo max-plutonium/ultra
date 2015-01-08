@@ -5,11 +5,12 @@
 
 namespace ultra {
 
-void scheduler::push_delayed(std::shared_ptr<task> t, std::size_t msecs)
+void scheduler::push_timed(std::shared_ptr<task> t,
+                           std::size_t delay_msecs, std::size_t period_msecs)
 {
-    auto dtask = std::make_shared<delayed_task>(
-            std::move(t), vm::impl::get()->_scheduler);
-    dtask->start(msecs);
+    auto dtask = std::make_shared<timed_task>(std::move(t),
+            vm::impl::get()->next_io_service(), shared_from_this());
+    dtask->start(delay_msecs, period_msecs);
 }
 
 /*static*/ std::shared_ptr<scheduler> scheduler::make(schedule_type type)

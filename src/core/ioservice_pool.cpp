@@ -13,9 +13,9 @@ ioservice_pool::ioservice_pool(std::size_t pool_size)
     for (std::size_t i = 0; i < pool_size; ++i)
     {
         io_service_ptr io_service(new boost::asio::io_service);
-        work_ptr work(new boost::asio::io_service::work(*io_service));
+//        work_ptr work(new boost::asio::io_service::work(*io_service));
         _ios.push_back(io_service);
-        _work.push_back(work);
+//        _work.push_back(work);
     }
 }
 
@@ -26,12 +26,12 @@ void ioservice_pool::stop()
         ioservice_ptr->stop();
 }
 
-boost::asio::io_service &ioservice_pool::next_io_service()
+std::shared_ptr<boost::asio::io_service> ioservice_pool::next_io_service()
 {
     std::lock_guard<decltype(_mtx)> lk(_mtx);
 
     // Use a round-robin scheme to choose the next io_service to use.
-    boost::asio::io_service& io_service = *_ios[_next_io_service];
+    auto io_service = _ios[_next_io_service];
     ++_next_io_service;
     if (_next_io_service == _ios.size())
         _next_io_service = 0;

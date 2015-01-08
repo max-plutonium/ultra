@@ -159,7 +159,7 @@ enum class schedule_type {
 /*!
  * \brief Интерфейс планировщика исполнения задач
  */
-class scheduler
+class scheduler : public std::enable_shared_from_this<scheduler>
 {
 protected:
     mutable std::mutex _lock;
@@ -175,11 +175,14 @@ public:
     virtual void push(std::shared_ptr<task>) = 0;
 
     /*!
-     * \brief Помещает задачу в очередь, планируя её исполнение
-     * только после \a msecs миллисекунд
+     * \brief Помещает задачу в очередь, планируя время её исполнения
+     *
+     * Исполняет задачу отложенно с задержкой \a delay_msecs миллисекунд
+     * и затем повторяя каждые \a period_msecs миллисекунд.
      */
-    void push_delayed(std::shared_ptr<task>, std::size_t msecs);
-
+    void push_timed(std::shared_ptr<task>,
+                    std::size_t delay_msecs = 0,
+                    std::size_t period_msecs = 0);
     /*!
      * \brief Возвращает задачу, которую надо исполнить, при этом
      * может ждать ее появления \a msecs миллисекунд
@@ -216,17 +219,24 @@ public:
 
 using sched_ptr = std::shared_ptr<scheduler>;
 
-class execution_service
+class event_loop : public task
 {
+
 protected:
     sched_ptr  _sched;
 
 public:
-    execution_service(const sched_ptr &sched) : _sched(sched) { }
-    execution_service(const execution_service &) = delete;
-    execution_service &operator=(const execution_service &) = delete;
-    execution_service(execution_service &&) = default;
-    execution_service &operator=(execution_service &&) = default;
+    event_loop() : _sched() { }
+    event_loop(const event_loop &) = delete;
+    event_loop &operator=(const event_loop &) = delete;
+    event_loop(event_loop &&) = default;
+    event_loop &operator=(event_loop &&) = default;
+
+    // task interface
+public:
+    virtual void run()
+    {
+    }
 };
 
 namespace bc = boost::coroutines;
@@ -239,7 +249,7 @@ protected:
     using _base1 = function_task<AsyncResult ()>;
     using _base2 = bc::symmetric_coroutine<void>::call_type;
 
-    execution_service *_executor;
+    event_loop *_executor;
     std::unique_ptr<typename bc::asymmetric_coroutine<AsyncResult>::push_type> _coro;
 
     virtual void sched_context(bc::symmetric_coroutine<void>::yield_type &yield) = 0;
@@ -247,7 +257,7 @@ protected:
         bc::asymmetric_coroutine<AsyncResult>::pull_type &yield) = 0;
 
 public:
-    explicit execution_unit(execution_service *srv, int prio = 0, std::size_t stack_size = 8192)
+    explicit execution_unit(event_loop *srv, int prio = 0, std::size_t stack_size = 8192)
         : _base1(prio, [this]() { (*this)(); })
         , _base2(std::bind(&execution_unit::sched_context, this, std::placeholders::_1),
                 boost::coroutines::attributes(stack_size))
