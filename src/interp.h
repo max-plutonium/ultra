@@ -15,7 +15,7 @@ public:
     interp(const address &a, node *parent = nullptr, int prio = 0)
         : device(a, parent, prio)
     { }
-    ~interp();
+    ~interp() { }
 
     // task interface
 public:
@@ -27,6 +27,8 @@ public:
             _out_ports.at(_distr(_generator) % _out_ports.size()) << ss;
     }
 };
+
+using interp_ptr = std::shared_ptr<interp>;
 
 } // namespace ultra
 

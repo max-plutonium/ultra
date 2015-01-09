@@ -105,8 +105,8 @@ vm::vm(int argc, const char **argv)
 
     d = new impl(cluster, num_threads, num_ios, addr, port);
 
-//    if(!argc)
-//        return;
+    if(!argc)
+        return;
 
     using namespace boost::asio;
     auto accept_service = std::make_shared<io_service>();
@@ -139,7 +139,6 @@ vm::vm(int argc, const char **argv)
 
 vm::~vm()
 {
-    raise(SIGQUIT);
     delete d;
 }
 

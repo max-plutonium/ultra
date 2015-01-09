@@ -1,28 +1,18 @@
 #include "../../src/field.h"
 #include <gmock/gmock.h>
 
-#include "../../src/vm.h"
+using namespace ultra;
 
-class test_field : public ::testing::Test
+TEST(test_field, create_interp)
 {
-protected:
-};
+    field fld(0, 0, 1);
+    auto int1 = fld.create_interp(1);
+    auto int2 = fld.create_interp(2);
+    auto int3 = fld.create_interp(3);
 
-#include "../../src/message.h"
+    EXPECT_EQ(address(0, 0, 1, 1), int1->get_address());
+    EXPECT_EQ(address(0, 0, 1, 2), int2->get_address());
+    EXPECT_EQ(address(0, 0, 1, 3), int3->get_address());
 
-#include <boost/coroutine/asymmetric_coroutine.hpp>
-
-TEST_F(test_field, create)
-{
-    using namespace ultra;
-
-    const char *argv[] = { "vm",
-                           "--num-threads=2",
-                           "--address=127.0.0.1",
-                           "--port=55888",
-                           "--cluster=1"};
-    ultra::vm vm(5, argv);
-
-
-    ultra::field fld(1);
+    return;
 }

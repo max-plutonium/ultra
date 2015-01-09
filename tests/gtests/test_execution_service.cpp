@@ -66,7 +66,7 @@ class test_execution_unit : public execution_unit<int>
 public:
     int a;
     test_execution_unit(int a)
-        : execution_unit<int>(nullptr, 0), a(a) { }
+        : execution_unit<int>(0), a(a) { }
 
     // execution_unit interface
 protected:
@@ -79,7 +79,7 @@ protected:
         return;
     }
     virtual int task_context(boost::coroutines::
-            asymmetric_coroutine<int>::pull_type &yield)
+            symmetric_coroutine<int>::yield_type &yield)
     {
         EXPECT_EQ(3, yield.get());
         return 7;

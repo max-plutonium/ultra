@@ -219,26 +219,6 @@ public:
 
 using sched_ptr = std::shared_ptr<scheduler>;
 
-class event_loop : public task
-{
-
-protected:
-    sched_ptr  _sched;
-
-public:
-    event_loop() : _sched() { }
-    event_loop(const event_loop &) = delete;
-    event_loop &operator=(const event_loop &) = delete;
-    event_loop(event_loop &&) = default;
-    event_loop &operator=(event_loop &&) = default;
-
-    // task interface
-public:
-    virtual void run()
-    {
-    }
-};
-
 namespace bc = boost::coroutines;
 
 template <typename AsyncResult>
@@ -249,20 +229,18 @@ protected:
     using _base1 = function_task<AsyncResult ()>;
     using _base2 = bc::symmetric_coroutine<void>::call_type;
 
-    event_loop *_executor;
-    std::unique_ptr<typename bc::asymmetric_coroutine<AsyncResult>::push_type> _coro;
+    std::unique_ptr<typename bc::symmetric_coroutine<AsyncResult>::call_type> _coro;
 
     virtual void sched_context(bc::symmetric_coroutine<void>::yield_type &yield) = 0;
     virtual AsyncResult task_context(typename
-        bc::asymmetric_coroutine<AsyncResult>::pull_type &yield) = 0;
+        bc::symmetric_coroutine<AsyncResult>::yield_type &yield) = 0;
 
 public:
-    explicit execution_unit(event_loop *srv, int prio = 0, std::size_t stack_size = 8192)
+    explicit execution_unit(int prio = 0, std::size_t stack_size = 8192)
         : _base1(prio, [this]() { (*this)(); })
         , _base2(std::bind(&execution_unit::sched_context, this, std::placeholders::_1),
                 boost::coroutines::attributes(stack_size))
-        , _executor(srv)
-        , _coro(new typename bc::asymmetric_coroutine<AsyncResult>::push_type(
+        , _coro(new typename bc::symmetric_coroutine<AsyncResult>::call_type(
                     std::bind(&execution_unit::task_context, this, std::placeholders::_1),
                                     boost::coroutines::attributes(stack_size)))
     {
