@@ -1,11 +1,11 @@
-#include "core/core_p.h"
-#include "port.h"
-#include "message.h"
-#include "core/action.h"
-
-#include <functional>
 #include <boost/program_options.hpp>
+#include <functional>
 #include <iostream>
+
+#include "core/action.h"
+#include "core/core_p.h"
+#include "message.h"
+#include "port.h"
 
 namespace ultra {
 
@@ -16,13 +16,13 @@ vm::impl::impl(int cluster, std::size_t num_threads, std::size_t num_ios,
                const std::string &address, const std::string &port)
     : core::ioservice_pool(num_ios), _cluster(cluster)
     , _pool(schedule_type::prio, num_threads)
-    , _scheduler(_pool.sched()), _addr(address), _port(port)
-    , _signals(), _acceptor()
+    , _addr(address), _port(port), _signals(), _acceptor()
 {
 }
 
 vm::impl::~impl()
 {
+    handle_stop();
     _pool.wait_for_done();
 }
 
@@ -124,7 +124,7 @@ vm::vm(int argc, const char **argv)
     // Open the acceptor with the option to reuse
     // the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(*accept_service);
-    ip::tcp::resolver::query query(addr, port);
+    ip::tcp::resolver::query query(ip::tcp::v4(), port);
     ip::tcp::endpoint endpoint = *resolver.resolve(query);
     d->_acceptor->open(endpoint.protocol());
     d->_acceptor->set_option(ip::tcp::acceptor::reuse_address(true));
@@ -133,7 +133,7 @@ vm::vm(int argc, const char **argv)
 
     d->_pool.reserve_thread();
     accept_service->post(core::make_action(&impl::start_accept, d, accept_service));
-    std::size_t (io_service::*ios_run)() = &io_service::run;
+    std::size_t (io_service::*ios_run)() = &io_service::run_one;
     d->_pool.execute_callable(1, core::make_action(ios_run, std::move(accept_service)));
 }
 
@@ -145,11 +145,6 @@ vm::~vm()
 /*static*/ vm *vm::instance()
 {
     return g_instance;
-}
-
-void vm::loop()
-{
-    d->next_io_service()->run();
 }
 
 void vm::post_message(port_message msg)

@@ -5,18 +5,15 @@ namespace ultra {
 /************************************************************************************
     timed_task
  ***********************************************************************************/
-timed_task::timed_task(const task_ptr &t,
-                       std::shared_ptr<boost::asio::io_service> ios,
-                       const std::weak_ptr<scheduler> &sched)
-    : _task(t), _ios(std::move(ios)), _timer(*_ios), _sched(sched)
+timed_task::timed_task(const task_ptr &t, execution_service *executor)
+    : _task(t), _timer(*g_instance->d->next_io_service()), _exec(executor)
 {
 }
 
 void timed_task::start(std::size_t delay_msecs, std::size_t period_msecs)
 {
     if(delay_msecs == 0) {
-        if(sched_ptr sched = _sched.lock())
-            sched->push(_task);
+        _exec->execute(_task);
 
         if(period_msecs > 0) {
             _timer.expires_from_now(boost::posix_time::milliseconds(period_msecs));

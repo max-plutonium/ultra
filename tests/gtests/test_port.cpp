@@ -26,7 +26,6 @@ TEST(test_port, connect_disconnect)
     EXPECT_TRUE(port1.connect(port2));
     EXPECT_FALSE(port1.connect(port2));
     port1.disconnect(port2);
-    vm.loop();
     EXPECT_TRUE(port1.connect(port2));
 }
 
@@ -44,7 +43,6 @@ TEST(test_port, data_sending)
     port1 << "123";
     port1 >> ss;
     EXPECT_EQ("", ss);
-    vm.loop();
     port2 >> ss;
     EXPECT_EQ("123", ss);
 }

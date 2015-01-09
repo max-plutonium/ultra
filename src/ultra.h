@@ -11,6 +11,34 @@
 
 namespace ultra {
 
+class task;
+
+/*!
+ * \brief Интерфейс исполнителя задач
+ */
+class execution_service
+{
+public:
+    /*!
+     * \brief Помещает задачу в очередь
+     */
+    virtual void execute(std::shared_ptr<task> ptask) = 0;
+
+    /*!
+     * \brief Помещает задачу в очередь, планируя время её исполнения
+     *
+     * Исполняет задачу отложенно с задержкой \a delay_msecs миллисекунд
+     * и затем повторяя каждые \a period_msecs миллисекунд.
+     */
+    virtual void execute_with_delay(std::shared_ptr<task> ptask,
+        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) = 0;
+
+    /*!
+     * \brief Завершает все начатые операции
+     */
+    virtual void shutdown() = 0;
+};
+
 /*!
  * \brief Общий интерфейс задачи, которую необходимо выполнить
  */
@@ -174,15 +202,6 @@ public:
      */
     virtual void push(std::shared_ptr<task>) = 0;
 
-    /*!
-     * \brief Помещает задачу в очередь, планируя время её исполнения
-     *
-     * Исполняет задачу отложенно с задержкой \a delay_msecs миллисекунд
-     * и затем повторяя каждые \a period_msecs миллисекунд.
-     */
-    void push_timed(std::shared_ptr<task>,
-                    std::size_t delay_msecs = 0,
-                    std::size_t period_msecs = 0);
     /*!
      * \brief Возвращает задачу, которую надо исполнить, при этом
      * может ждать ее появления \a msecs миллисекунд

@@ -1,13 +1,14 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#include "schedulers.h"
 #include <list>
 #include <unordered_set>
 
+#include "schedulers.h"
+
 namespace ultra { namespace core {
 
-class thread_pool
+class thread_pool : public execution_service
 {
     sched_ptr  _sched;
     std::atomic_bool _shutdown;
@@ -59,7 +60,9 @@ class thread_pool
 
     // executor interface
 public:
-    virtual void execute(task_ptr) final;
+    virtual void execute(task_ptr) final override;
+    virtual void execute_with_delay(std::shared_ptr<task>,
+        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) final override;
 
     explicit thread_pool(schedule_type st, std::size_t max_threads = -1);
     explicit thread_pool(sched_ptr s, std::size_t max_threads = -1);
@@ -68,8 +71,6 @@ public:
     thread_pool(thread_pool&&) = delete;
     thread_pool& operator=(const thread_pool&) = delete;
     thread_pool& operator=(thread_pool&&) = delete;
-
-    std::shared_ptr<scheduler> sched() const { return _sched; }
 
     std::chrono::milliseconds expiry_timeout() const;
     void set_expiry_timeout(std::chrono::milliseconds timeout);
@@ -83,7 +84,7 @@ public:
     bool wait_for_done(int msecs = -1);
     void reset();
     void clear();
-    void shutdown();
+    virtual void shutdown() override;
 
   template <typename Res, typename... Args>
       std::future<Res>

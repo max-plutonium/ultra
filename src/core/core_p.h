@@ -15,23 +15,17 @@ namespace ultra {
 struct timed_task : std::enable_shared_from_this<timed_task>
 {
     task_ptr _task;
-    std::shared_ptr<boost::asio::io_service> _ios;
     boost::asio::deadline_timer _timer;
-    std::weak_ptr<scheduler> _sched;
+    execution_service *_exec;
 
-    timed_task(const task_ptr &t,
-               std::shared_ptr<boost::asio::io_service> ios,
-               const std::weak_ptr<scheduler> &sched);
+    timed_task(const task_ptr &t, execution_service *executor);
     void start(std::size_t delay_msecs = 0, std::size_t period_msecs = 0);
 };
 
 struct vm::impl : public core::ioservice_pool
 {
     int _cluster;
-
     core::thread_pool _pool;
-    sched_ptr _scheduler;
-
     std::string _addr, _port;
 
     /// The signal_set is used to register for process

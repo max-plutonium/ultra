@@ -15,10 +15,9 @@ public:
     ~vm();
 
     static vm *instance();
-    void loop();
     void post_message(port_message);
 
-    friend struct delayed_task;
+    friend struct timed_task;
     friend struct scheduler;
 };
 

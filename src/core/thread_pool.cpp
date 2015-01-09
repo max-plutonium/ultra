@@ -1,8 +1,10 @@
-#include "thread_pool.h"
 #include <thread>
 #include <algorithm>
 #include <memory>
 #include <cassert>
+
+#include "thread_pool.h"
+#include "core_p.h"
 
 namespace ultra { namespace core {
 
@@ -213,6 +215,13 @@ void thread_pool::execute(task_ptr ptask)
             _waiters.pop_front();
         }
     }
+}
+
+void thread_pool::execute_with_delay(std::shared_ptr<task> ptask,
+        std::size_t delay_msecs, std::size_t period_msecs)
+{
+    auto dtask = std::make_shared<timed_task>(std::move(ptask), this);
+    dtask->start(delay_msecs, period_msecs);
 }
 
 thread_pool::thread_pool(schedule_type st, std::size_t max_threads)
