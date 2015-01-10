@@ -21,8 +21,8 @@ public:
     std::shared_ptr<boost::asio::io_service> next_io_service();
 
 private:
-    typedef std::shared_ptr<boost::asio::io_service> io_service_ptr;
-    typedef std::shared_ptr<boost::asio::io_service::work> work_ptr;
+    using io_service_ptr = std::shared_ptr<boost::asio::io_service>;
+    using work_ptr = std::shared_ptr<boost::asio::io_service::work>;
 
     std::mutex _mtx;
 

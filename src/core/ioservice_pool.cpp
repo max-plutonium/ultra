@@ -13,9 +13,9 @@ ioservice_pool::ioservice_pool(std::size_t pool_size)
     for (std::size_t i = 0; i < pool_size; ++i)
     {
         io_service_ptr io_service(new boost::asio::io_service);
-//        work_ptr work(new boost::asio::io_service::work(*io_service));
+        work_ptr work(new boost::asio::io_service::work(*io_service));
         _ios.push_back(io_service);
-//        _work.push_back(work);
+        _work.push_back(work);
     }
 }
 

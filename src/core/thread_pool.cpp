@@ -3,13 +3,13 @@
 #include <memory>
 #include <cassert>
 
-#include "thread_pool.h"
 #include "core_p.h"
+#include "thread_pool.h"
 
 namespace ultra { namespace core {
 
 thread_pool::worker::worker(sched_ptr s, thread_pool *pool)
-    : _sched(std::move(s)), _pool(pool), _status(thread_pool::ready)
+    : _sched(std::move(s)), _pool(pool)
 {
 }
 
@@ -52,7 +52,6 @@ public:
         bool expired = false;
         while(!expired)
         {
-            _status = thread_pool::running;
             do {
                 task_ptr ptask = std::move(_task);
 
@@ -76,7 +75,6 @@ public:
 
             if(!expired)
             {
-                _status = thread_pool::wait;
                 _pool->_waiters.push_back(shared_from_this());
                 inactivate();
                 const std::cv_status waitres = _cond.wait_for(lk, _pool->_expiry_timeout);
@@ -231,7 +229,7 @@ thread_pool::thread_pool(schedule_type st, std::size_t max_threads)
 
 thread_pool::thread_pool(sched_ptr s, std::size_t max_threads)
     : _sched(std::move(s)), _shutdown(false)
-    , _waiting_task_timeout(1000), _expiry_timeout(30000)
+    , _waiting_task_timeout(1000), _expiry_timeout(10000)
     , _nr_max_threads(max_threads <= 0 ? std::thread::hardware_concurrency() : max_threads)
     , _active_threads(0), _nr_reserved(0)
 {

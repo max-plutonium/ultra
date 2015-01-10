@@ -2,6 +2,7 @@
 #define CORE_P_H
 
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 
 #include "../vm.h"
 #include "core/ioservice_pool.h"
@@ -25,41 +26,30 @@ struct timed_task : std::enable_shared_from_this<timed_task>
     void start(std::size_t delay_msecs = 0, std::size_t period_msecs = 0);
 };
 
-class network_task : public task
-{
-    std::shared_ptr<boost::asio::io_service> _ios;
-
-public:
-    network_task(int prio, const std::shared_ptr<boost::asio::io_service> &ios);
-
-    // task interface
-public:
-    virtual void run();
-};
-
 struct vm::impl : public core::ioservice_pool
 {
     int _cluster;
-    core::thread_pool _pool;
+    core::thread_pool _work_threads;
+    boost::thread_group _net_threads;
+    std::atomic_bool _stop_all;
     std::string _addr, _port;
 
     /// The signal_set is used to register for process
     /// termination notifications
-    std::unique_ptr<boost::asio::signal_set> _signals;
+    boost::asio::signal_set _signals;
 
     /// Acceptor used to listen for incoming connections.
-    std::unique_ptr<boost::asio::ip::tcp::acceptor> _acceptor;
+    boost::asio::ip::tcp::acceptor _acceptor;
 
     static inline vm::impl *get() { return vm::instance()->d; }
 
-    impl(int cluster, std::size_t num_threads, std::size_t num_ios,
-         const std::string &address, const std::string &port);
+    impl(int cluster, std::size_t num_threads, std::size_t num_network_threads,
+         std::size_t num_ios, const std::string &address, const std::string &port);
 
     ~impl();
 
-    void start_accept(std::shared_ptr<boost::asio::io_service> accept_ios);
-    void handle_accept(std::shared_ptr<boost::asio::io_service> accept_ios,
-                       std::shared_ptr<boost::asio::ip::tcp::socket> sock,
+    void start_accept();
+    void handle_accept(std::shared_ptr<boost::asio::ip::tcp::socket> sock,
                        const boost::system::error_code &ec);
     void handle_stop();
 };

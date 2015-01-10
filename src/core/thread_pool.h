@@ -13,10 +13,6 @@ class thread_pool : public execution_service
     sched_ptr  _sched;
     std::atomic_bool _shutdown;
 
-    enum worker_status {
-        ready, running, wait
-    };
-
     struct worker;
     using worker_ptr = std::shared_ptr<worker>;
     using worker_list = std::list<worker_ptr>;
@@ -37,7 +33,6 @@ class thread_pool : public execution_service
     {
         sched_ptr _sched;
         thread_pool *_pool;
-        worker_status _status;
         std::condition_variable _cond;
 
         explicit worker(sched_ptr s, thread_pool *pool);

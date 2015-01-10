@@ -38,14 +38,4 @@ void timed_task::start(std::size_t delay_msecs, std::size_t period_msecs)
     _timer.async_wait(std::bind(&timed_task::start, shared_from_this(), 0, period_msecs));
 }
 
-network_task::network_task(int prio, const std::shared_ptr<boost::asio::io_service> &ios)
-    : task(prio), _ios(ios)
-{
-}
-
-void network_task::run()
-{
-    _ios->run_one();
-}
-
 } // namespace ultra
