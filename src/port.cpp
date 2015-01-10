@@ -98,7 +98,8 @@ void port::impl::disconnect_sender(const std::shared_ptr<port::impl> &asender)
             return asender == entry;
         });
 
-    _senders.erase(it);
+    if(it != _senders.cend())
+        _senders.erase(it);
 }
 
 void port::impl::disconnect_receiver(const std::shared_ptr<port::impl> &areceiver)
@@ -109,7 +110,8 @@ void port::impl::disconnect_receiver(const std::shared_ptr<port::impl> &areceive
             return areceiver == entry;
         });
 
-    _receivers.erase(it);
+    if(it != _receivers.cend())
+        _receivers.erase(it);
 }
 
 void port::impl::disconnect_all_senders()
@@ -141,7 +143,7 @@ void port::impl::disconnect_all_receivers()
     port
  ***********************************************************************************/
 port::port(ultra::openmode om, const address &a, node *parent)
-    : node(a, parent)
+    : device(a, parent)
     , std::stringstream(static_cast<std::ios_base::openmode>(om))
     , _impl(std::make_shared<impl>(this, om))
 {
@@ -180,6 +182,10 @@ void port::disconnect(const port &areceiver)
     port_message msg(port_message::disconnect_sender, _impl,
                 areceiver._impl, _time);
     vm::instance()->post_message(std::move(msg));
+}
+
+void port::run()
+{
 }
 
 } // namespace ultra

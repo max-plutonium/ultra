@@ -1,15 +1,17 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include "port.h"
+#include "node.h"
 #include "ultra.h"
 
 namespace ultra {
 
+class port;
+
 class device : public node, public task
 {
 protected:
-    std::deque<port> _in_ports, _out_ports;
+    std::deque<std::shared_ptr<port>> _in_ports, _out_ports;
 
 public:
     explicit device(const address &a, node *parent = nullptr, int prio = 0);

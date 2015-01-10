@@ -3,7 +3,8 @@
 
 #include <sstream>
 #include <memory>
-#include "node.h"
+
+#include "device.h"
 
 namespace ultra {
 
@@ -19,7 +20,7 @@ enum class openmode : int {
     inout = std::ios_base::in | std::ios_base::out
 };
 
-class port : public node, public std::stringstream
+class port : public device, public std::stringstream
 {
     class impl;
     std::shared_ptr<impl> _impl;
@@ -37,6 +38,10 @@ public:
 protected:
     friend class port_message;
     friend class vm;
+
+    // task interface
+public:
+    virtual void run();
 };
 
 using port_ptr = std::shared_ptr<port>;
