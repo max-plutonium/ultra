@@ -7,6 +7,8 @@
 #include <iostream>
 #include "../../src/vm.h"
 
+#include "../../src/msg.pb.h"
+
 class test_network_session : public testing::Test
 {
 protected:
@@ -23,7 +25,7 @@ public:
         , _timer(_ios) { }
 };
 
-TEST_F(test_network_session, input_data)
+TEST_F(test_network_session, ping_pong)
 {
     const char *argv[] = { "vm",
                            "--num-threads=2",
@@ -38,11 +40,11 @@ TEST_F(test_network_session, input_data)
     _socket->connect(_endpoint, ec);
     ASSERT_FALSE(ec);
 
-    std::ostream out(&_buf);
-    out << "hello" << std::endl;
-    std::ostringstream oss;
-    oss << &_buf;
-    std::string data = oss.str();
+    ultra::internal::request req;
+    req.set_type(ultra::internal::request::ping);
+    req.set_data("ping");
+    std::string data = req.SerializeAsString();
+    data.push_back('\n');
 
     std::size_t n = _socket->write_some(boost::asio::buffer(data), ec);
     ASSERT_FALSE(ec);
@@ -51,6 +53,8 @@ TEST_F(test_network_session, input_data)
     ASSERT_FALSE(ec);
 
     std::istream in(&_buf);
-    in >> data;
-    EXPECT_EQ("hello", data);
+    ultra::internal::reply rep;
+    rep.ParseFromIstream(&in);
+    EXPECT_EQ(ultra::internal::reply::pong, rep.type());
+    EXPECT_EQ("pong", rep.data());
 }

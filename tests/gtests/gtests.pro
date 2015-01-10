@@ -36,6 +36,8 @@ CONFIG(debug, debug|release) {
     else: win32: LIBS += -lultra0
 }
 
+LIBS += -lprotobuf
+
 
 DESTDIR = $$BUILDROOT
 MOC_DIR = $$BUILDROOT/$$BUILDSUFFIX/tests/gtests

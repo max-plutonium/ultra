@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "network_session.h"
+#include "msg.pb.h"
 
 namespace ultra { namespace core {
 
@@ -26,11 +27,17 @@ void network_session::start()
 
                     std::size_t n = boost::asio::async_read_until(*_socket, buf, '\n', yield);
                     std::istream in(&buf);
-                    std::string data;
-                    in >> data;
+                    ultra::internal::request req;
+                    req.ParseFromIstream(&in);
 
-                    data.push_back('\n');
-                    _socket->async_write_some(boost::asio::buffer(data), yield);
+                    if(req.type() == ultra::internal::request::ping) {
+                        ultra::internal::reply rep;
+                        rep.set_type(ultra::internal::reply::pong);
+                        rep.set_data("pong");
+                        std::string data = rep.SerializeAsString();
+                        data.push_back('\n');
+                        _socket->async_write_some(boost::asio::buffer(data), yield);
+                    }
                 }
             }
             catch (std::exception &e)

@@ -34,14 +34,20 @@ message vector_time {
 
 message request {
     enum command_type {
+        ping = 0;
         input_data = 1;
         debug_start = 2;
         debug_stop = 3;
     }
     required command_type type = 1;
-    repeated bytes data = 2;
+    optional bytes data = 2;
 }
 
 message reply {
-    repeated bytes data = 1;
+    enum command_type {
+        pong = 0;
+        output_data = 1;
+    }
+    required command_type type = 1;
+    optional bytes data = 2;
 }
