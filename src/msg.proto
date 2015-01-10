@@ -32,10 +32,16 @@ message vector_time {
     repeated int64 vector = 2;
 }
 
-message input_data {
-    repeated bytes data = 1;
+message request {
+    enum command_type {
+        input_data = 1;
+        debug_start = 2;
+        debug_stop = 3;
+    }
+    required command_type type = 1;
+    repeated bytes data = 2;
 }
 
-message output_data {
+message reply {
     repeated bytes data = 1;
 }
