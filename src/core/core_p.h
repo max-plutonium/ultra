@@ -2,7 +2,7 @@
 #define CORE_P_H
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread.hpp> // thread group
 
 #include "../vm.h"
 #include "core/ioservice_pool.h"
@@ -48,9 +48,6 @@ struct vm::impl : public core::ioservice_pool
 
     ~impl();
 
-    void start_accept();
-    void handle_accept(std::shared_ptr<boost::asio::ip::tcp::socket> sock,
-                       const boost::system::error_code &ec);
     void handle_stop();
 };
 

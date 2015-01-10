@@ -80,7 +80,6 @@ HEADERS += \
     core/action.h \
     logic_time.h \
     message.h \
-    core/grid.h \
     core/ioservice_pool.h \
     port.h \
     node.h \
@@ -88,7 +87,8 @@ HEADERS += \
     device.h \
     interp.h \
     field.h \
-    core/schedulers.h
+    core/schedulers.h \
+    core/network_session.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -104,7 +104,6 @@ SOURCES += \
     vm.cpp \
     logic_time.cpp \
     message.cpp \
-    core/grid.cpp \
     core/ioservice_pool.cpp \
     port.cpp \
     node.cpp \
@@ -112,7 +111,8 @@ SOURCES += \
     device.cpp \
     interp.cpp \
     field.cpp \
-    core/schedulers.cpp
+    core/schedulers.cpp \
+    core/network_session.cpp
 
 ### Install settings ###
 

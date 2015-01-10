@@ -15,6 +15,8 @@ public:
     ~vm();
 
     static vm *instance();
+    void wait_for_done();
+    void loop();
     void post_message(port_message);
 
     friend struct timed_task;

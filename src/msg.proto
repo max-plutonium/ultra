@@ -31,3 +31,11 @@ message vector_time {
     required int64 index = 1;
     repeated int64 vector = 2;
 }
+
+message input_data {
+    repeated bytes data = 1;
+}
+
+message output_data {
+    repeated bytes data = 1;
+}

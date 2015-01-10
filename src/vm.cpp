@@ -1,9 +1,10 @@
 #include <boost/program_options.hpp>
+#include <boost/asio/spawn.hpp>
 #include <functional>
-#include <iostream>
 
 #include "core/action.h"
 #include "core/core_p.h"
+#include "core/network_session.h"
 #include "message.h"
 #include "port.h"
 
@@ -40,7 +41,17 @@ vm::impl::impl(int cluster, std::size_t num_threads, std::size_t num_network_thr
     _acceptor.bind(endpoint);
     _acceptor.listen();
 
-    start_accept();
+    boost::asio::spawn(_acceptor.get_io_service(),
+        [this](boost::asio::yield_context yield)
+        {
+            for (;;) {
+                boost::system::error_code ec;
+                auto sock = std::make_shared<ip::tcp::socket>(*next_io_service());
+                _acceptor.async_accept(*sock, yield[ec]);
+                if (!ec)
+                    std::make_shared<core::network_session>(std::move(sock))->start();
+            }
+        });
 
     for(std::size_t i = 0; i < num_network_threads; ++i) {
         _net_threads.create_thread([this]() {
@@ -56,28 +67,6 @@ vm::impl::~impl()
     handle_stop();
     _net_threads.join_all();
     _work_threads.wait_for_done();
-}
-
-void vm::impl::start_accept()
-{
-    using namespace boost::asio;
-    auto sock = std::make_shared<ip::tcp::socket>(*next_io_service());
-    _acceptor.async_accept(*sock, std::bind(&impl::handle_accept, this,
-                sock, std::placeholders::_1));
-}
-
-void vm::impl::handle_accept(std::shared_ptr<boost::asio::ip::tcp::socket> sock,
-        const boost::system::error_code &ec)
-{
-    using namespace boost::asio;
-
-    if(!_acceptor.is_open())
-        return;
-
-//    if (!e)
-//        m_sessionManager.start(m_pnewSocket);
-    // TODO consume socket
-    start_accept();
 }
 
 void vm::impl::handle_stop()
@@ -121,7 +110,7 @@ vm::vm(int argc, const char **argv)
     std::size_t num_network_threads = 1;
     std::size_t num_ios = 1;
     std::string addr = "127.0.0.1";
-    std::string port = "55004";
+    std::string port = "55699";
     int cluster = 0;
 
     if (vm.count("num-threads"))
@@ -143,9 +132,6 @@ vm::vm(int argc, const char **argv)
         cluster = vm["cluster"].as<int>();
 
     d = new impl(cluster, num_threads, num_network_threads, num_ios, addr, port);
-
-    if(!argc)
-        return;
 }
 
 vm::~vm()
@@ -156,6 +142,19 @@ vm::~vm()
 /*static*/ vm *vm::instance()
 {
     return g_instance;
+}
+
+void vm::wait_for_done()
+{
+    d->stop();
+    d->_net_threads.join_all();
+    d->_work_threads.wait_for_done();
+}
+
+void vm::loop()
+{
+    auto res = d->next_io_service()->poll();
+    return;
 }
 
 void vm::post_message(port_message msg)

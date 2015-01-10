@@ -12,10 +12,12 @@ TEST_F(test_vm, create)
 
     const char *argv[] = { "vm",
                            "--num-threads=2",
+                           "--num-network-threads=2",
+                           "--num-reactors=1",
                            "--address=127.0.0.1",
-                           "--port=55999",
-                           "--cluster=1"};
-    ultra::vm vm(5, argv);
+                           "--port=55777",
+                           "--cluster=0"};
+    ultra::vm vm(7, argv);
 
     EXPECT_EQ(&vm, ultra::vm::instance());
     return;
