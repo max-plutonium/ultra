@@ -41,7 +41,7 @@ protected:
 
     // task interface
 public:
-    virtual void run();
+    virtual void run() override;
 };
 
 using port_ptr = std::shared_ptr<port>;
