@@ -37,6 +37,11 @@ public:
      * \brief Завершает все начатые операции
      */
     virtual void shutdown() = 0;
+
+    /*!
+     * \brief Возвращает true, если исполнитель задач остановлен
+     */
+    virtual bool stopped() const = 0;
 };
 
 /*!
@@ -227,7 +232,9 @@ public:
     /*!
      * \brief Останавливает выполнение планировщика
      */
-    inline void stop() { std::lock_guard<std::mutex> lk(_lock); stopped = true; }
+    inline void stop() {
+        std::lock_guard<std::mutex> lk(_lock); stopped = true;
+    }
 
     /*!
      * \brief Возвращает объект планировщика исходя из переданного

@@ -231,7 +231,7 @@ thread_pool::thread_pool(schedule_type st, std::size_t max_threads)
 
 thread_pool::thread_pool(sched_ptr s, std::size_t max_threads)
     : _sched(std::move(s)), _shutdown(false)
-    , _waiting_task_timeout(10), _expiry_timeout(10000)
+    , _waiting_task_timeout(1000), _expiry_timeout(30000)
     , _nr_max_threads(max_threads <= 0 ? std::thread::hardware_concurrency() : max_threads)
     , _active_threads(0), _nr_reserved(0)
 {
@@ -303,6 +303,11 @@ void thread_pool::shutdown()
 {
     _shutdown = true;
     _sched->stop();
+}
+
+bool thread_pool::stopped() const
+{
+    return _shutdown;
 }
 
 } // namespace core

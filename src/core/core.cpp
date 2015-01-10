@@ -19,6 +19,9 @@ timed_task::timed_task(const task_ptr &t,
 
 void timed_task::start(std::size_t delay_msecs, std::size_t period_msecs)
 {
+    if(_exec->stopped())
+        return;
+
     if(delay_msecs == 0) {
         _exec->execute(_task);
 

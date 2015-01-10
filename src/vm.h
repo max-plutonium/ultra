@@ -18,6 +18,7 @@ public:
     void post_message(port_message);
 
     friend struct timed_task;
+    friend class network_task;
     friend struct scheduler;
 };
 

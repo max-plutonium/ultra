@@ -83,13 +83,13 @@ vm::vm(int argc, const char **argv)
         std::cout << desc << "\n";
 
     std::size_t num_threads = 1;
-    std::size_t num_ios = 1;
+    int num_ios = 1;
     std::string addr = "127.0.0.1";
     std::string port = "55004";
     int cluster = 0;
 
     if (vm.count("num-threads"))
-        num_threads = vm["num-threads"].as<std::size_t>();
+        num_threads = vm["num-threads"].as<std::size_t>() + 1; // + acceptor
 
     if (vm.count("num-reactors"))
         num_ios = vm["num-reactors"].as<std::size_t>();
@@ -110,13 +110,14 @@ vm::vm(int argc, const char **argv)
 
     using namespace boost::asio;
     auto accept_service = std::make_shared<io_service>();
-    d->_signals = std::make_unique<boost::asio::signal_set>(*accept_service);
-    d->_acceptor = std::make_unique<boost::asio::ip::tcp::acceptor>(*accept_service);
+    d->_signals = std::make_unique<signal_set>(*accept_service);
+    d->_acceptor = std::make_unique<ip::tcp::acceptor>(*accept_service);
 
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
     d->_signals->add(SIGINT);
+    d->_signals->add(SIGABRT);
     d->_signals->add(SIGTERM);
     d->_signals->add(SIGQUIT);
     d->_signals->async_wait(std::bind(&impl::handle_stop, d));
@@ -131,10 +132,17 @@ vm::vm(int argc, const char **argv)
     d->_acceptor->bind(endpoint);
     d->_acceptor->listen();
 
-    d->_pool.reserve_thread();
     accept_service->post(core::make_action(&impl::start_accept, d, accept_service));
-    std::size_t (io_service::*ios_run)() = &io_service::run_one;
+    std::size_t (io_service::*ios_run)() = &io_service::run;
     d->_pool.execute_callable(1, core::make_action(ios_run, std::move(accept_service)));
+
+    while(num_ios) {
+        auto ios = d->next_io_service();
+        auto ptask = std::make_shared<network_task>(1, ios);
+        auto dtask = std::make_shared<timed_task>(std::move(ptask), ios, &d->_pool);
+        dtask->start(0, 1000);
+        --num_ios;
+    }
 }
 
 vm::~vm()

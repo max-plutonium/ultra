@@ -14,7 +14,7 @@ class thread_pool : public execution_service
     std::atomic_bool _shutdown;
 
     enum worker_status {
-        ready, running, wait, stopped
+        ready, running, wait
     };
 
     struct worker;
@@ -55,9 +55,6 @@ class thread_pool : public execution_service
     bool _wait_for_done(int msecs);
     void _reset();
 
-    friend struct worker;
-    friend struct thread_worker;
-
     // executor interface
 public:
     virtual void execute(task_ptr) final override;
@@ -85,6 +82,9 @@ public:
     void reset();
     void clear();
     virtual void shutdown() override;
+    virtual bool stopped() const override;
+
+    friend struct thread_worker;
 
   template <typename Res, typename... Args>
       std::future<Res>
