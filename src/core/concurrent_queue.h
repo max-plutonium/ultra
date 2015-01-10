@@ -1,9 +1,10 @@
 #ifndef CONCURRENT_QUEUE_H
 #define CONCURRENT_QUEUE_H
 
-#include "locks.h"
 #include <memory>
 #include <type_traits>
+
+#include "locks.h"
 
 namespace ultra { namespace core {
 

@@ -19,7 +19,22 @@ struct timed_task : std::enable_shared_from_this<timed_task>
     execution_service *_exec;
 
     timed_task(const task_ptr &t, execution_service *executor);
+    timed_task(const task_ptr &t,
+               const std::shared_ptr<boost::asio::io_service> &ios,
+               execution_service *executor);
     void start(std::size_t delay_msecs = 0, std::size_t period_msecs = 0);
+};
+
+class network_task : public task
+{
+    std::shared_ptr<boost::asio::io_service> _ios;
+
+public:
+    network_task(int prio, const std::shared_ptr<boost::asio::io_service> &ios);
+
+    // task interface
+public:
+    virtual void run();
 };
 
 struct vm::impl : public core::ioservice_pool

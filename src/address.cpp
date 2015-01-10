@@ -1,5 +1,6 @@
-#include "address.h"
 #include <boost/functional/hash.hpp>
+
+#include "address.h"
 #include "msg.pb.h"
 
 namespace ultra {

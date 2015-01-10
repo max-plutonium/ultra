@@ -1,5 +1,6 @@
-#include "schedulers.h"
 #include <cassert>
+
+#include "schedulers.h"
 #include "system.h"
 #include "core_p.h"
 

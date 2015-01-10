@@ -3,6 +3,7 @@
 
 #include <initializer_list>
 #include <iostream>
+
 #include "ultra_global.h"
 
 namespace ultra {
