@@ -8,16 +8,22 @@
 
 namespace ultra { namespace core {
 
+/*!
+ * \brief Пул io_service-ов
+ *
+ * Необходим для хранения и равномерного распределения объектов
+ * класса \c io_service объектам, которые в них нуждаются.
+ */
 class ioservice_pool : private boost::noncopyable
 {
 public:
-    /// Construct the io_service pool
+    /// Создает пул из \a pool_size io_service-ов
     ioservice_pool(std::size_t pool_size);
 
-    /// Stop all io_service objects in the pool
+    /// Останавливает все io_service-ы в пуле
     void stop();
 
-    /// Get an io_service to use
+    /// Возвращает указатель на следующий io_service
     std::shared_ptr<boost::asio::io_service> next_io_service();
 
 private:
@@ -25,14 +31,8 @@ private:
     using work_ptr = std::shared_ptr<boost::asio::io_service::work>;
 
     std::mutex _mtx;
-
-    /// The pool of io_services.
     std::vector<io_service_ptr> _ios;
-
-    /// The work that keeps the io_services running
     std::vector<work_ptr> _work;
-
-    /// The next io_service to use for a connection
     std::size_t _next_io_service;
 };
 

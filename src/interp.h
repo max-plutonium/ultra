@@ -2,7 +2,7 @@
 #define INTERP_H
 
 #include <random>
-#include "device.h"
+#include "node.h"
 
 namespace ultra {
 

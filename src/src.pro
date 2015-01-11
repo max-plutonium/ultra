@@ -84,7 +84,6 @@ HEADERS += \
     port.h \
     node.h \
     core/core_p.h \
-    device.h \
     interp.h \
     field.h \
     core/schedulers.h \
@@ -108,7 +107,6 @@ SOURCES += \
     port.cpp \
     node.cpp \
     core/core.cpp \
-    device.cpp \
     interp.cpp \
     field.cpp \
     core/schedulers.cpp \

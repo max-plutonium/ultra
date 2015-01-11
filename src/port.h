@@ -4,7 +4,7 @@
 #include <sstream>
 #include <memory>
 
-#include "device.h"
+#include "node.h"
 
 namespace ultra {
 
