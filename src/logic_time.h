@@ -6,18 +6,27 @@
 
 namespace ultra {
 
+/*!
+ * \brief Интерфейс логического времени
+ */
 struct logic_time
 {
-    virtual bool advance() = 0;
+    /*!
+     * \brief Продвигает логическое время вперед
+     */
+    virtual void advance() = 0;
 };
 
+/*!
+ * \brief Класс скалярного времени
+ */
 class scalar_time : public logic_time
 {
     std::size_t _time;
 
 public:
     explicit scalar_time(std::size_t t = 0);
-    virtual bool advance() override;
+    virtual void advance() override;
     std::size_t time() const;
     void merge(const scalar_time &other);
 
@@ -33,6 +42,9 @@ public:
 std::ostream &operator<<(std::ostream &o, const scalar_time &msg);
 std::istream &operator>>(std::istream &i, scalar_time &msg);
 
+/*!
+ * \brief Класс векторного времени
+ */
 class vector_time : public logic_time
 {
     std::vector<std::size_t> _time;
@@ -40,7 +52,7 @@ class vector_time : public logic_time
 
 public:
     explicit vector_time(std::size_t index, std::size_t count);
-    virtual bool advance() override;
+    virtual void advance() override;
     std::vector<std::size_t> time() const;
     void merge(const vector_time &other);
 
