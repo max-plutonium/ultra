@@ -8,6 +8,21 @@
 
 namespace ultra { namespace core {
 
+/*!
+ * \brief Класс пула потоков
+ *
+ * Пул потоков управляет выполнением задач потоками и позволяет
+ * переиспользовать потоки, чтобы сократить затраты на их создание.
+ *
+ * \snippet core/thread_pool.cpp pool
+ *
+ * Потоки, которые не используются определенное время "истекают".
+ * По-умолчанию, время истечения равно 30 секундам, но может быть
+ * изменено вызовом \c set_expiry_timeout().
+ *
+ * Так же можно настраивать максимальное число потоков и резервировать
+ * их для внешних нужд.
+ */
 class thread_pool : public execution_service
 {
     sched_ptr  _sched;
@@ -50,19 +65,21 @@ class thread_pool : public execution_service
     bool _wait_for_done(int msecs);
     void _reset();
 
-    // executor interface
 public:
-    virtual void execute(task_ptr) final override;
+    virtual void execute(std::shared_ptr<task>) final override;
     virtual void execute_with_delay(std::shared_ptr<task>,
         std::size_t delay_msecs = 0, std::size_t period_msecs = 0) final override;
 
     explicit thread_pool(schedule_type st, std::size_t max_threads = -1);
     explicit thread_pool(sched_ptr s, std::size_t max_threads = -1);
     ~thread_pool();
+
+#ifndef DOXYGEN
     thread_pool(const thread_pool&) = delete;
     thread_pool(thread_pool&&) = delete;
     thread_pool& operator=(const thread_pool&) = delete;
     thread_pool& operator=(thread_pool&&) = delete;
+#endif
 
     std::chrono::milliseconds expiry_timeout() const;
     void set_expiry_timeout(std::chrono::milliseconds timeout);
@@ -74,13 +91,18 @@ public:
     void reserve_thread();
     void release_thread();
     bool wait_for_done(int msecs = -1);
-    void reset();
     void clear();
     virtual void shutdown() override;
     virtual bool stopped() const override;
 
     friend struct thread_worker;
 
+    /*!
+     * \brief Конструирует задачу из объекта действия \a fun
+     * с приоритетом \a prio и передает её на исполнение
+     *
+     * \return Объект будущего результата задачи.
+     */
   template <typename Res, typename... Args>
       std::future<Res>
     execute_callable(int prio, action<Res (Args...)> &&fun)
@@ -93,6 +115,13 @@ public:
         return ret;
     }
 
+    /*!
+     * \brief Конструирует задачу из функции \a fun с
+     * аргументами \a args и с приоритетом \a prio и передает
+     * её на исполнение
+     *
+     * \return Объект будущего результата задачи.
+     */
   template <typename Function, typename... Args>
       auto
     execute_callable(int prio, Function &&fun, Args &&...args)

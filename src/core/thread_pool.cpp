@@ -203,7 +203,7 @@ void thread_pool::_reset()
     _shutdown = false;
 }
 
-void thread_pool::execute(task_ptr ptask)
+void thread_pool::execute(std::shared_ptr<task> ptask)
 {
     std::lock_guard<std::mutex> lk(_lock);
     if(!_try_start(ptask)) {
@@ -222,42 +222,71 @@ void thread_pool::execute_with_delay(std::shared_ptr<task> ptask,
     dtask->start(delay_msecs, period_msecs);
 }
 
+/*!
+ * \brief Конструирует пул с планировщиком \a st и с
+ * максимальным числом потоков \a max_threads
+ *
+ * Если \c max_threads меньше либо равно нулю, количество потоков
+ * выставляется равным количеству процессоров в системе.
+ */
 thread_pool::thread_pool(schedule_type st, std::size_t max_threads)
     : thread_pool(scheduler::make(st), max_threads)
 {
 }
 
+/*!
+ * \brief Конструирует пул с планировщиком \a s и с
+ * максимальным числом потоков \a max_threads
+ *
+ * Если \c max_threads меньше либо равно нулю, количество потоков
+ * выставляется равным количеству процессоров в системе.
+ */
 thread_pool::thread_pool(sched_ptr s, std::size_t max_threads)
     : _sched(std::move(s)), _shutdown(false)
-    , _waiting_task_timeout(1000), _expiry_timeout(10000)
+    , _waiting_task_timeout(1000), _expiry_timeout(30000)
     , _nr_max_threads(max_threads <= 0 ? std::thread::hardware_concurrency() : max_threads)
     , _active_threads(0), _nr_reserved(0)
 {
 }
 
+/*!
+ * \brief Ждет окончания работ и уничтожает пул
+ */
 thread_pool::~thread_pool()
 {
     wait_for_done();
 }
 
+/*!
+ * \brief Возвращает таймаут истечения потоков
+ */
 std::chrono::milliseconds thread_pool::expiry_timeout() const
 {
     std::lock_guard<std::mutex> lk(_lock);
     return _expiry_timeout;
 }
 
+/*!
+ * \brief Устанавливает из \a timeout таймаут истечения потоков
+ */
 void thread_pool::set_expiry_timeout(std::chrono::milliseconds timeout)
 {
     std::lock_guard<std::mutex> lk(_lock);
     _expiry_timeout = timeout;
 }
 
+/*!
+ * \brief Возвращает максимальное число потоков
+ */
 std::size_t thread_pool::max_thread_count() const
 {
     std::lock_guard<std::mutex> lk(_lock);
     return _nr_max_threads;
 }
 
+/*!
+ * \brief Устанавливает максимальное число потоков
+ */
 void thread_pool::set_max_thread_count(std::size_t count)
 {
     std::lock_guard<std::mutex> lk(_lock);
@@ -265,18 +294,27 @@ void thread_pool::set_max_thread_count(std::size_t count)
     _try_to_start_more();
 }
 
+/*!
+ * \brief Возвращает число активных в данный момент потоков
+ */
 std::size_t thread_pool::thread_count() const
 {
     std::lock_guard<std::mutex> lk(_lock);
     return _active_thread_count();
 }
 
+/*!
+ * \brief Резервирует поток
+ */
 void thread_pool::reserve_thread()
 {
     std::lock_guard<std::mutex> lk(_lock);
     ++_nr_reserved;
 }
 
+/*!
+ * \brief Освобождает поток
+ */
 void thread_pool::release_thread()
 {
     std::lock_guard<std::mutex> lk(_lock);
@@ -284,6 +322,13 @@ void thread_pool::release_thread()
     _try_to_start_more();
 }
 
+/*!
+ * \brief Ждет завершения всех потоков \a msecs миллисекунд
+ *
+ * Если \a msecs меньше нуля, то ждет неограниченное время
+ *
+ * \return true, если потоки были завершены при ожидании
+ */
 bool thread_pool::wait_for_done(int msecs)
 {
     const bool res = _wait_for_done(msecs);
@@ -292,6 +337,9 @@ bool thread_pool::wait_for_done(int msecs)
     return res;
 }
 
+/*!
+ * \brief Очищает очередь задач планировщика
+ */
 void thread_pool::clear()
 {
     _sched->clear();
