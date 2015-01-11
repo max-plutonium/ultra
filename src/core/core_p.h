@@ -4,11 +4,12 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp> // thread group
 
+#include <cds/gc/hp.h>
+
 #include "../vm.h"
 #include "core/ioservice_pool.h"
 #include "core/thread_pool.h"
-#include "node.h"
-#include "message.h"
+#include "messages.h"
 #include "system.h"
 
 namespace ultra {
@@ -41,7 +42,7 @@ struct vm::impl : public core::ioservice_pool
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
 
-    static inline vm::impl *get() { return vm::instance()->d; }
+    cds::gc::HP _gc;
 
     impl(int cluster, std::size_t num_threads, std::size_t num_network_threads,
          std::size_t num_ios, const std::string &address, const std::string &port);

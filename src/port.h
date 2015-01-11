@@ -4,7 +4,7 @@
 #include <sstream>
 #include <memory>
 
-#include "node.h"
+#include "logic_time.h"
 
 namespace ultra {
 
@@ -20,17 +20,17 @@ enum class openmode : int {
     inout = std::ios_base::in | std::ios_base::out
 };
 
-class port : public device, public std::stringstream
+class port : public std::stringstream
 {
     class impl;
     std::shared_ptr<impl> _impl;
+    scalar_time _time;
 
 public:
-    explicit port(ultra::openmode om = ultra::openmode::inout,
-                  const address &a = address(),
-                  node *parent = nullptr);
+    explicit port(ultra::openmode om = ultra::openmode::inout);
     virtual ~port();
 
+    scalar_time get_time() const { return _time; }
     ultra::openmode open_mode() const;
     bool connect(const port &);
     void disconnect(const port &);
@@ -38,10 +38,6 @@ public:
 protected:
     friend class port_message;
     friend class vm;
-
-    // task interface
-public:
-    virtual void run() override;
 };
 
 using port_ptr = std::shared_ptr<port>;

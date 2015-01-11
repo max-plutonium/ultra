@@ -1,6 +1,9 @@
 #ifndef VM_H
 #define VM_H
 
+#include <map>
+
+#include "field.h"
 #include "port.h"
 
 namespace ultra {
@@ -9,6 +12,8 @@ class vm
 {
     struct impl;
     impl *d = nullptr;
+
+    std::map<int, field> _fields;
 
 public:
     vm(int argc, const char **argv);
@@ -20,7 +25,6 @@ public:
     void post_message(port_message);
 
     friend struct timed_task;
-    friend class network_task;
     friend struct scheduler;
 };
 

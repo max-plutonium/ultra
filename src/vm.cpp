@@ -2,10 +2,12 @@
 #include <boost/asio/spawn.hpp>
 #include <functional>
 
+#include <cds/init.h>
+
 #include "core/action.h"
 #include "core/core_p.h"
 #include "core/network_session.h"
-#include "message.h"
+#include "messages.h"
 #include "port.h"
 
 namespace ultra {
@@ -131,12 +133,16 @@ vm::vm(int argc, const char **argv)
     if (vm.count("cluster"))
         cluster = vm["cluster"].as<int>();
 
+    cds::Initialize();
+
     d = new impl(cluster, num_threads, num_network_threads, num_ios, addr, port);
 }
 
 vm::~vm()
 {
     delete d;
+
+    cds::Terminate();
 }
 
 /*static*/ vm *vm::instance()

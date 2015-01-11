@@ -9,9 +9,9 @@ TEMPLATE = lib
 QT -= core gui
 TARGET = ultra
 DEFINES += ULTRA_SHARED
-VERSION = 0.1.0
+VERSION = 0.1.1
 
-#load(ultra_cds)
+load(ultra_cds)
 load(ultra_boost)
 
 ### Building settings ###
@@ -79,15 +79,13 @@ HEADERS += \
     vm.h \
     core/action.h \
     logic_time.h \
-    message.h \
     core/ioservice_pool.h \
     port.h \
-    node.h \
     core/core_p.h \
-    interp.h \
     field.h \
     core/schedulers.h \
-    core/network_session.h
+    core/network_session.h \
+    messages.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -102,15 +100,13 @@ SOURCES += \
     ultra.cpp \
     vm.cpp \
     logic_time.cpp \
-    message.cpp \
     core/ioservice_pool.cpp \
     port.cpp \
-    node.cpp \
     core/core.cpp \
-    interp.cpp \
     field.cpp \
     core/schedulers.cpp \
-    core/network_session.cpp
+    core/network_session.cpp \
+    messages.cpp
 
 ### Install settings ###
 

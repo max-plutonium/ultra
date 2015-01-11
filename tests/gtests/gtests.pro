@@ -14,6 +14,7 @@ QMAKE_CXXFLAGS += -std=gnu++1y
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_boost)
+load(ultra_cds)
 load(ultra_gtest)
 load(ultra_jit)
 
@@ -60,7 +61,6 @@ SOURCES += \
     test_thread_pool.cpp \
     test_vm.cpp \
     test_logic_time.cpp \
-    test_message.cpp \
     test_port.cpp \
     test_field.cpp \
     test_execution_service.cpp \

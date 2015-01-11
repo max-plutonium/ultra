@@ -1,11 +1,12 @@
 #include "../../src/vm.h"
 #include <gmock/gmock.h>
 
+#include <thread>
+
 TEST(test_port, basic_test)
 {
     using namespace ultra;
 
-    ultra::vm vm(0, nullptr);
     port port1(openmode::out);
     port port2(openmode::in);
 
@@ -19,7 +20,6 @@ TEST(test_port, connect_disconnect)
 {
     using namespace ultra;
 
-    ultra::vm vm(0, nullptr);
     port_ptr port1 = std::make_shared<port>(openmode::out);
     port_ptr port2 = std::make_shared<port>(openmode::in);
 
@@ -34,7 +34,6 @@ TEST(test_port, data_sending)
 {
     using namespace ultra;
 
-    ultra::vm vm(0, nullptr);
     port_ptr port1 = std::make_shared<port>(openmode::out);
     port_ptr port2 = std::make_shared<port>(openmode::in);
 

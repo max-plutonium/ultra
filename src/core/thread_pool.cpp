@@ -21,7 +21,8 @@ class thread_worker : public thread_pool::worker
 
 public:
     explicit thread_worker(std::shared_ptr<scheduler> s,
-        thread_pool *pool) : worker(std::move(s), pool) { }
+        thread_pool *pool) : worker(std::move(s), pool)
+    { }
 
     virtual ~thread_worker() override {
         if(_thread && _thread->joinable())
@@ -49,6 +50,8 @@ public:
 
     void run() override
     {
+        cds::gc::HP::thread_gc threadGC;
+
         bool expired = false;
         while(!expired)
         {

@@ -142,9 +142,8 @@ void port::impl::disconnect_all_receivers()
 /************************************************************************************
     port
  ***********************************************************************************/
-port::port(ultra::openmode om, const address &a, node *parent)
-    : device(a, parent)
-    , std::stringstream(static_cast<std::ios_base::openmode>(om))
+port::port(ultra::openmode om)
+    : std::stringstream(static_cast<std::ios_base::openmode>(om))
     , _impl(std::make_shared<impl>(this, om))
 {
     std::iostream::rdbuf(_impl.get());
@@ -182,10 +181,6 @@ void port::disconnect(const port &areceiver)
     port_message msg(port_message::disconnect_sender, _impl,
                 areceiver._impl, _time);
     vm::instance()->post_message(std::move(msg));
-}
-
-void port::run()
-{
 }
 
 } // namespace ultra
