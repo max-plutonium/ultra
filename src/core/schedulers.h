@@ -8,6 +8,9 @@
 
 namespace ultra { namespace core {
 
+/*!
+ * \brief FIFO-планировщик
+ */
 class fifo_scheduler : public scheduler
 {
     std::deque<task_ptr> _tasks;
@@ -15,7 +18,7 @@ class fifo_scheduler : public scheduler
 
     // scheduler interface
 public:
-    virtual void push(task_ptr) override;
+    virtual void push(std::shared_ptr<task>) override;
     virtual task_ptr schedule(std::chrono::milliseconds =
             std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;
@@ -23,6 +26,9 @@ public:
     virtual void clear() override;
 };
 
+/*!
+ * \brief LIFO-планировщик
+ */
 class lifo_scheduler : public scheduler
 {
     std::deque<task_ptr> _tasks;
@@ -30,7 +36,7 @@ class lifo_scheduler : public scheduler
 
     // scheduler interface
 public:
-    virtual void push(task_ptr) override;
+    virtual void push(std::shared_ptr<task>) override;
     virtual task_ptr schedule(std::chrono::milliseconds =
             std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;
@@ -38,6 +44,9 @@ public:
     virtual void clear() override;
 };
 
+/*!
+ * \brief Планировщик задач с приоритетами
+ */
 class prio_scheduler : public scheduler
 {
     using task_queue = std::priority_queue<task_ptr,
@@ -47,7 +56,7 @@ class prio_scheduler : public scheduler
 
     // scheduler interface
 public:
-    virtual void push(task_ptr) override;
+    virtual void push(std::shared_ptr<task>) override;
     virtual task_ptr schedule(std::chrono::milliseconds =
             std::chrono::milliseconds(0)) override;
     virtual std::size_t size() const override;

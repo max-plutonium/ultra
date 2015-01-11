@@ -34,7 +34,7 @@ namespace core {
     fifo_scheduler
  ***********************************************************************************/
 
-void fifo_scheduler::push(task_ptr t)
+void fifo_scheduler::push(std::shared_ptr<task> t)
 {
     std::unique_lock<decltype(_lock)> lk(_lock);
     _tasks.push_back(std::move(t));
@@ -84,7 +84,7 @@ void fifo_scheduler::clear()
     lifo_scheduler
  ***********************************************************************************/
 
-void lifo_scheduler::push(task_ptr t)
+void lifo_scheduler::push(std::shared_ptr<task> t)
 {
     std::unique_lock<decltype(_lock)> lk(_lock);
     _tasks.push_front(std::move(t));
@@ -134,7 +134,7 @@ void lifo_scheduler::clear()
     prio_scheduler
  ***********************************************************************************/
 
-void prio_scheduler::push(task_ptr t)
+void prio_scheduler::push(std::shared_ptr<task> t)
 {
     std::unique_lock<decltype(_lock)> lk(_lock);
     _tasks.push(std::move(t));
