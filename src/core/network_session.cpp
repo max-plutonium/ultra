@@ -3,11 +3,11 @@
 #include <iostream>
 
 #include "network_session.h"
-#include "msg.pb.h"
+#include "messages.h"
 
 namespace ultra { namespace core {
 
-network_session::network_session(std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+network_session::network_session(socket_ptr sock)
     : _socket(std::move(sock)), _timer(_socket->get_io_service())
     , _strand(_socket->get_io_service())
 {
@@ -27,16 +27,21 @@ void network_session::start()
 
                     std::size_t n = boost::asio::async_read_until(*_socket, buf, '\n', yield);
                     std::istream in(&buf);
-                    ultra::internal::request req;
-                    req.ParseFromIstream(&in);
+                    request req;
+                    in >> req;
 
-                    if(req.type() == ultra::internal::request::ping) {
-                        ultra::internal::reply rep;
-                        rep.set_type(ultra::internal::reply::pong);
-                        rep.set_data("pong");
-                        std::string data = rep.SerializeAsString();
-                        data.push_back('\n');
-                        _socket->async_write_some(boost::asio::buffer(data), yield);
+                    switch (req.type())
+                    {
+                        case request::ping:
+                            handle_ping(req.data(), yield);
+                            break;
+
+                        case request::input_data:
+                            handle_input(req.data(), yield);
+                            break;
+
+                        default:
+                            break;
                     }
                 }
             }
@@ -57,6 +62,26 @@ void network_session::start()
                     _socket->close();
             }
         });
+}
+
+void network_session::handle_ping(std::string data, boost::asio::yield_context yield)
+{
+    std::ostringstream out;
+    reply rep(reply::pong, "pong");
+    out << rep;
+    data = out.str();
+    data.push_back('\n');
+    _socket->async_write_some(boost::asio::buffer(data), yield);
+}
+
+void network_session::handle_input(std::string data, boost::asio::yield_context yield)
+{
+    std::ostringstream out;
+    reply rep(reply::output_data, data);
+    out << rep;
+    data = out.str();
+    data.push_back('\n');
+    _socket->async_write_some(boost::asio::buffer(data), yield);
 }
 
 } // namespace core

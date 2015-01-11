@@ -1,37 +1,5 @@
 package ultra.internal;
 
-message address {
-    required int32 cluster = 1;
-    required int32 space = 2;
-    required int32 field = 3;
-    required int32 node = 4;
-}
-
-message scalar_time {
-    required int64 counter = 1;
-}
-
-message scalar_message {
-    required scalar_time time = 1;
-    required address sender = 2;
-    required address receiver = 3;
-    enum msg_type {
-        unknown = 0;
-        port_data = 1;
-        connect_sender = 2;
-        connect_receiver = 3;
-        disconnect_sender = 4;
-        disconnect_receiver = 5;
-    }
-    required msg_type type = 4;
-    optional bytes data = 5;
-}
-
-message vector_time {
-    required int64 index = 1;
-    repeated int64 vector = 2;
-}
-
 message request {
     enum command_type {
         ping = 0;
@@ -50,4 +18,20 @@ message reply {
     }
     required command_type type = 1;
     optional bytes data = 2;
+}
+
+message address {
+    required int32 cluster = 1;
+    required int32 space = 2;
+    required int32 field = 3;
+    required int32 node = 4;
+}
+
+message scalar_time {
+    required int64 counter = 1;
+}
+
+message vector_time {
+    required int64 index = 1;
+    repeated int64 vector = 2;
 }

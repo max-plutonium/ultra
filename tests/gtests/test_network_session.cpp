@@ -20,22 +20,13 @@ protected:
 
 public:
     test_network_session()
-        : _endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 55789)
+        : _endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 55769)
         , _socket(std::make_shared<boost::asio::ip::tcp::socket>(_ios))
         , _timer(_ios) { }
 };
 
 TEST_F(test_network_session, ping_pong)
 {
-    const char *argv[] = { "vm",
-                           "--num-threads=2",
-                           "--num-network-threads=2",
-                           "--num-reactors=1",
-                           "--address=127.0.0.1",
-                           "--port=55789",
-                           "--cluster=0"};
-    ultra::vm vm(7, argv);
-
     boost::system::error_code ec;
     _socket->connect(_endpoint, ec);
     ASSERT_FALSE(ec);
@@ -57,4 +48,40 @@ TEST_F(test_network_session, ping_pong)
     rep.ParseFromIstream(&in);
     EXPECT_EQ(ultra::internal::reply::pong, rep.type());
     EXPECT_EQ("pong", rep.data());
+}
+
+#include <random>
+
+TEST_F(test_network_session, input_data)
+{
+    boost::system::error_code ec;
+    _socket->connect(_endpoint, ec);
+    ASSERT_FALSE(ec);
+
+    std::ostringstream oss;
+    std::uniform_int_distribution<int> distr;
+    std::mt19937_64 generator;
+    for(int i = 0; i < 100; ++i)
+        oss << distr(generator);
+    std::string data = oss.str();
+    std::string data2 = data;
+    data.push_back('\n');
+
+    ultra::internal::request req;
+    req.set_type(ultra::internal::request::input_data);
+    req.set_data(data);
+    data = req.SerializeAsString();
+    data.push_back('\n');
+
+    std::size_t n = _socket->write_some(boost::asio::buffer(data), ec);
+    ASSERT_FALSE(ec);
+
+    n = boost::asio::read_until(*_socket, _buf, '\n');
+    ASSERT_FALSE(ec);
+
+    std::istream in(&_buf);
+    ultra::internal::reply rep;
+    rep.ParseFromIstream(&in);
+    EXPECT_EQ(ultra::internal::reply::output_data, rep.type());
+    EXPECT_EQ(data2 + '\n', rep.data());
 }
