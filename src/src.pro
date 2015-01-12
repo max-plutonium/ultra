@@ -82,7 +82,6 @@ HEADERS += \
     core/ioservice_pool.h \
     port.h \
     core/core_p.h \
-    field.h \
     core/schedulers.h \
     core/network_session.h \
     messages.h
@@ -103,7 +102,6 @@ SOURCES += \
     core/ioservice_pool.cpp \
     port.cpp \
     core/core.cpp \
-    field.cpp \
     core/schedulers.cpp \
     core/network_session.cpp \
     messages.cpp
@@ -117,5 +115,6 @@ target.path = ../lib
 INSTALLS += target headerTarget
 
 DISTFILES += \
-    msg.proto \
-    ../examples/core/concurrent_queue.cpp
+    ../examples/core/concurrent_queue.cpp \
+    ../examples/core/thread_pool.cpp \
+    ../examples/ultra.cpp

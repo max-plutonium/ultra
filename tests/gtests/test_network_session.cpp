@@ -20,7 +20,7 @@ protected:
 
 public:
     test_network_session()
-        : _endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 55769)
+        : _endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 55766)
         , _socket(std::make_shared<boost::asio::ip::tcp::socket>(_ios))
         , _timer(_ios) { }
 };
