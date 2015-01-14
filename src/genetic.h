@@ -10,10 +10,8 @@
 
 namespace ultra {
 
-template <std::size_t GeneSize>
-float fitness(const std::bitset<GeneSize> &bs) {
-    return bs.count();
-}
+template <std::size_t GeneSize = 31>
+using gene_t = std::bitset<GeneSize>;
 
 class genetic_engine
 {
@@ -22,7 +20,7 @@ protected:
     constexpr static std::size_t genome_size = 8;
 
     /// Кол-во битов в гене
-    constexpr static std::size_t gene_size = 8;
+    constexpr static std::size_t gene_size = 31;
 
 public:
     enum selection_type {
@@ -33,11 +31,11 @@ public:
         one_point, two_point, elementwise
     };
 
-    genetic_engine(ultra::core::action<float (const std::bitset<gene_size> &)> fitness,
+    genetic_engine(ultra::core::action<float (const gene_t<gene_size> &)> fitness,
                    std::size_t generation_count, selection_type st, crossing_type ct,
                    float mutation_percent = 0.1f);
 
-    const std::bitset<gene_size> &run();
+    const gene_t<gene_size> &run();
 
 protected:
     // Инициализация
@@ -56,13 +54,13 @@ protected:
     void mutate();
 
 private:
-    ultra::core::action<float (const std::bitset<gene_size> &)> _fitness;
-    std::vector<std::bitset<gene_size>> _genome;
+    ultra::core::action<float (const gene_t<gene_size> &)> _fitness;
+    std::vector<gene_t<gene_size>> _genome;
     std::mt19937_64 _generator;
     std::size_t _generation_count;
     float _mut_percent = 0.1f;
-    selection_type _sel_type = tourney;
-    crossing_type _cross_type = elementwise;
+    selection_type _sel_type;
+    crossing_type _cross_type;
 };
 
 } // namespace ultra

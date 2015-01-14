@@ -4,7 +4,7 @@
 
 namespace ultra {
 
-genetic_engine::genetic_engine(core::action<float (const std::bitset<gene_size> &)> fitness,
+genetic_engine::genetic_engine(core::action<float (const gene_t<gene_size> &)> fitness,
     std::size_t generation_count, selection_type st, crossing_type ct, float mutation_percent)
     : _fitness(std::move(fitness)), _genome(genome_size)
     , _generation_count(generation_count), _mut_percent(mutation_percent)
@@ -12,7 +12,7 @@ genetic_engine::genetic_engine(core::action<float (const std::bitset<gene_size> 
 {
 }
 
-const std::bitset<genetic_engine::gene_size> &genetic_engine::run()
+const gene_t<genetic_engine::gene_size> &genetic_engine::run()
 {
     generate_init_population();
     std::size_t best_index = 0;
@@ -123,7 +123,7 @@ void genetic_engine::crossing(std::deque<std::size_t> &indices)
     }
 
     if(_cross_type == one_point) {
-        std::vector<std::bitset<gene_size>> new_genome;
+        std::vector<gene_t<gene_size>> new_genome;
         std::uniform_int_distribution<std::size_t> distr(0, gene_size - 1);
         for(std::pair<std::size_t, std::size_t> pair : pairs) {
             std::string str1 = _genome.at(pair.first).to_string();
@@ -142,7 +142,7 @@ void genetic_engine::crossing(std::deque<std::size_t> &indices)
         _genome = new_genome;
     }
     else if(_cross_type == two_point) {
-        std::vector<std::bitset<gene_size>> new_genome;
+        std::vector<gene_t<gene_size>> new_genome;
         std::uniform_int_distribution<std::size_t> distr(0, gene_size - 1);
         for(std::pair<std::size_t, std::size_t> pair : pairs) {
             std::string str1 = _genome.at(pair.first).to_string();
@@ -179,7 +179,7 @@ void genetic_engine::mutate()
 {
     std::uniform_real_distribution<float> distr(0, 1);
     std::uniform_int_distribution<std::size_t> distr2(0, gene_size - 1);
-    for(std::bitset<gene_size> &gene : _genome)
+    for(gene_t<gene_size> &gene : _genome)
         if(distr(_generator) < _mut_percent)
             gene.flip(distr2(_generator));
 }
