@@ -4,24 +4,21 @@
 
 namespace ultra {
 
-genetic_engine::genetic_engine(core::action<float (const gene_t<gene_size> &)> fitness,
-    std::size_t generation_count, selection_type st, crossing_type ct, float mutation_percent)
-    : _fitness(std::move(fitness)), _genome(genome_size)
-    , _generation_count(generation_count), _mut_percent(mutation_percent)
-    , _sel_type(st), _cross_type(ct)
+genome::genome(std::size_t genome_size)
+    : _genome_size(genome_size), _genome(genome_size)
 {
 }
 
-const gene_t<genetic_engine::gene_size> &genetic_engine::run()
+const gene_t &genome::select_best(const core::action<float (const gene_t &)> &fitness,
+    std::size_t generation_count, selection_type st, crossing_type ct, float mutation_percent)
 {
-    generate_init_population();
     std::size_t best_index = 0;
 
     do {
-        auto estim = estimation();
+        auto estim = estimation(fitness);
 
         std::size_t max_count = 0;
-        for(std::size_t i = 0; i < genome_size; ++i) {
+        for(std::size_t i = 0; i < _genome_size; ++i) {
             std::size_t count = std::count(estim.first.cbegin(), estim.first.cend(), i);
             if(count > max_count) {
                 max_count = count;
@@ -29,44 +26,62 @@ const gene_t<genetic_engine::gene_size> &genetic_engine::run()
             }
         }
 
-        auto indices = selection(estim);
-        crossing(indices);
-        mutate();
+        auto indices = selection(st, estim);
 
-    } while(--_generation_count);
+        std::deque<std::pair<std::size_t, std::size_t>> pairs;
+        while(!indices.empty()) {
+            std::size_t cur_idx = indices.back();
+            indices.pop_back();
+            std::uniform_int_distribution<std::size_t> distr(0, indices.size() - 1);
+            std::size_t pos = distr(_generator);
+            std::size_t idx_for_pairing = indices.at(pos);
+            indices.erase(indices.begin() + pos);
+            pairs.emplace_back(cur_idx, idx_for_pairing);
+        }
+
+        crossing(ct, pairs);
+        mutate(mutation_percent);
+
+    } while(--generation_count);
 
     return _genome[best_index];
 }
 
-void genetic_engine::generate_init_population()
+const std::deque<gene_t> &genome::chromosomes() const
 {
-    std::uniform_int_distribution<std::size_t> distr(0, 1 << gene_size);
+    return _genome;
+}
+
+void genome::init_random()
+{
+    std::uniform_int_distribution<std::size_t> distr(0, 1 << 7);
     std::generate(_genome.begin(), _genome.end(), [&] {
         return distr(_generator);
     });
 }
 
-std::pair<std::vector<float>, float> genetic_engine::estimation()
+std::pair<std::deque<float>, float>
+genome::estimation(const core::action<float (const gene_t &)> &fitness)
 {
-    std::vector<float> fitness_results(genome_size);
+    std::deque<float> fitness_results(_genome_size);
     float summ = 0;
     for(std::size_t i = 0; i < fitness_results.size(); ++i) {
-        fitness_results[i] = _fitness(_genome[i]);
+        fitness_results[i] = fitness(_genome[i]);
         summ += fitness_results[i];
     }
     return std::make_pair(fitness_results, summ);
 }
 
-std::deque<std::size_t> genetic_engine::selection(
-        const std::pair<std::vector<float>, float> &pair)
+std::deque<std::size_t> genome::selection(selection_type sel_type,
+        const std::pair<std::deque<float>, float> &pair)
 {
     auto &fitness_results = pair.first;
     auto summ = pair.second;
     std::deque<std::size_t> indices;
 
-    if(_sel_type == tourney) {
-        std::uniform_int_distribution<std::size_t> distr(0, genome_size - 1);
-        for(std::size_t i = 0; i < genome_size; ++i) {
+    if(sel_type == tourney) {
+        std::uniform_int_distribution<std::size_t> distr(0, _genome_size - 1);
+        for(std::size_t i = 0; i < _genome_size; ++i) {
             std::size_t idx1 = distr(_generator);
             std::size_t idx2 = distr(_generator);
             if(fitness_results[idx1] > fitness_results[idx2])
@@ -75,9 +90,9 @@ std::deque<std::size_t> genetic_engine::selection(
                 indices.push_back(idx2);
         }
     }
-    else if(_sel_type == roulette_wheel) {
-        std::vector<float> likelihoods(genome_size);
-        std::vector<float> wheel(genome_size);
+    else if(sel_type == roulette_wheel) {
+        std::vector<float> likelihoods(_genome_size);
+        std::vector<float> wheel(_genome_size);
         for(std::size_t i = 0; i < fitness_results.size(); ++i) {
             likelihoods[i] = fitness_results[i] / summ;
             if(i == 0)
@@ -86,7 +101,7 @@ std::deque<std::size_t> genetic_engine::selection(
                 wheel[i] = wheel[i - 1] + likelihoods[i];
         }
 
-        std::vector<float> selectors(genome_size);
+        std::vector<float> selectors(_genome_size);
         std::uniform_real_distribution<float> distr(0, 1);
         std::generate(selectors.begin(), selectors.end(), [&] {
             return distr(_generator);
@@ -109,22 +124,12 @@ std::deque<std::size_t> genetic_engine::selection(
     return indices;
 }
 
-void genetic_engine::crossing(std::deque<std::size_t> &indices)
+void genome::crossing(crossing_type cross_type,
+    const std::deque<std::pair<std::size_t, std::size_t> > &pairs)
 {
-    std::vector<std::pair<std::size_t, std::size_t>> pairs;
-    while(!indices.empty()) {
-        std::size_t cur_idx = indices.back();
-        indices.pop_back();
-        std::uniform_int_distribution<std::size_t> distr(0, indices.size() - 1);
-        std::size_t pos = distr(_generator);
-        std::size_t idx_for_pairing = indices.at(pos);
-        indices.erase(indices.begin() + pos);
-        pairs.emplace_back(cur_idx, idx_for_pairing);
-    }
-
-    if(_cross_type == one_point) {
-        std::vector<gene_t<gene_size>> new_genome;
-        std::uniform_int_distribution<std::size_t> distr(0, gene_size - 1);
+    if(cross_type == one_point) {
+        std::deque<gene_t> new_genome;
+        std::uniform_int_distribution<std::size_t> distr(0, 7);
         for(std::pair<std::size_t, std::size_t> pair : pairs) {
             std::string str1 = _genome.at(pair.first).to_string();
             std::string str2 = _genome.at(pair.second).to_string();
@@ -139,11 +144,11 @@ void genetic_engine::crossing(std::deque<std::size_t> &indices)
             new_genome.emplace_back(str5 + str4);
         }
 
-        _genome = new_genome;
+        _genome = std::move(new_genome);
     }
-    else if(_cross_type == two_point) {
-        std::vector<gene_t<gene_size>> new_genome;
-        std::uniform_int_distribution<std::size_t> distr(0, gene_size - 1);
+    else if(cross_type == two_point) {
+        std::deque<gene_t> new_genome;
+        std::uniform_int_distribution<std::size_t> distr(0, 7);
         for(std::pair<std::size_t, std::size_t> pair : pairs) {
             std::string str1 = _genome.at(pair.first).to_string();
             std::string str2 = _genome.at(pair.second).to_string();
@@ -162,25 +167,25 @@ void genetic_engine::crossing(std::deque<std::size_t> &indices)
             new_genome.emplace_back(str6 + str4 + str8);
         }
 
-        _genome = new_genome;
+        _genome = std::move(new_genome);
     }
-    else if(_cross_type == elementwise) {
-        std::uniform_int_distribution<std::size_t> distr(0, 1 << gene_size);
+    else if(cross_type == elementwise) {
+        std::uniform_int_distribution<std::size_t> distr(0, 1 << 7);
         for(std::pair<std::size_t, std::size_t> pair : pairs) {
             std::size_t mask = distr(_generator);
-            std::size_t swap_mask = (_genome[pair.first] ^ _genome[pair.second]).to_ulong() & mask;
+            std::size_t swap_mask = (_genome[pair.first] ^ _genome[pair.second]).to_ullong() & mask;
             _genome[pair.first] ^= swap_mask;
             _genome[pair.second] ^= swap_mask;
         }
     }
 }
 
-void genetic_engine::mutate()
+void genome::mutate(float mutation_percent)
 {
     std::uniform_real_distribution<float> distr(0, 1);
-    std::uniform_int_distribution<std::size_t> distr2(0, gene_size - 1);
-    for(gene_t<gene_size> &gene : _genome)
-        if(distr(_generator) < _mut_percent)
+    std::uniform_int_distribution<std::size_t> distr2(0, 7);
+    for(gene_t &gene : _genome)
+        if(distr(_generator) < mutation_percent)
             gene.flip(distr2(_generator));
 }
 

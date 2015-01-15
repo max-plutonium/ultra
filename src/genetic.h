@@ -2,26 +2,17 @@
 #define GENETIC_H
 
 #include <bitset>
-#include <vector>
-#include <random>
 #include <deque>
+#include <random>
 
 #include "core/action.h"
 
 namespace ultra {
 
-template <std::size_t GeneSize = 31>
-using gene_t = std::bitset<GeneSize>;
+using gene_t = std::bitset<8>;
 
-class genetic_engine
+class genome
 {
-protected:
-    /// Кол-во генов в геноме
-    constexpr static std::size_t genome_size = 8;
-
-    /// Кол-во битов в гене
-    constexpr static std::size_t gene_size = 31;
-
 public:
     enum selection_type {
         tourney, roulette_wheel
@@ -31,36 +22,37 @@ public:
         one_point, two_point, elementwise
     };
 
-    genetic_engine(ultra::core::action<float (const gene_t<gene_size> &)> fitness,
-                   std::size_t generation_count, selection_type st, crossing_type ct,
-                   float mutation_percent = 0.1f);
+    explicit genome(std::size_t genome_size);
 
-    const gene_t<gene_size> &run();
+    const gene_t &select_best(const core::action<float (const gene_t &)> &fitness,
+        std::size_t generation_count, selection_type st,
+        crossing_type ct, float mutation_percent = 0.1f);
+
+    const std::deque<gene_t> &chromosomes() const;
+
+    // Инициализация
+    void init_random();
 
 protected:
-    // Инициализация
-    void generate_init_population();
-
     // Оценка приспособленности
-    std::pair<std::vector<float>, float> estimation();
+    std::pair<std::deque<float>, float>
+        estimation(const core::action<float (const gene_t &)> &fitness);
 
     // Селекция
-    std::deque<std::size_t> selection(const std::pair<std::vector<float>, float> &pair);
+    std::deque<std::size_t> selection(selection_type sel_type,
+        const std::pair<std::deque<float>, float> &pair);
 
     // Скрещивание
-    void crossing(std::deque<std::size_t> &indices);
+    void crossing(crossing_type cross_type,
+            const std::deque<std::pair<std::size_t, std::size_t>> &pairs);
 
     // Мутация
-    void mutate();
+    void mutate(float mutation_percent);
 
 private:
-    ultra::core::action<float (const gene_t<gene_size> &)> _fitness;
-    std::vector<gene_t<gene_size>> _genome;
+    std::size_t _genome_size;
+    std::deque<gene_t> _genome;
     std::mt19937_64 _generator;
-    std::size_t _generation_count;
-    float _mut_percent = 0.1f;
-    selection_type _sel_type;
-    crossing_type _cross_type;
 };
 
 } // namespace ultra
