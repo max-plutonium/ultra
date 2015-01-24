@@ -1,65 +1,66 @@
 #ifndef ACTION_H
 #define ACTION_H
 
-#include "../ultra_global.h"
 #include <tuple>
 #include <memory>
+
+#include "../ultra_global.h"
 
 namespace ultra { namespace core {
 
 namespace details {
 
 template <std::size_t... Indices> struct index_sequence {
-    using Next = index_sequence<Indices..., sizeof... (Indices)>;
+    using next = index_sequence<Indices..., sizeof... (Indices)>;
 };
 
 template <std::size_t Num> struct index_sequence_bulder {
-    using Type = typename index_sequence_bulder<Num - 1>::Type::Next;
+    using type = typename index_sequence_bulder<Num - 1>::type::next;
 };
 
 template <> struct index_sequence_bulder<0> {
-    using Type = index_sequence<>;
+    using type = index_sequence<>;
 };
 
 template <std::size_t Head, std::size_t... Tail> struct last_index {
-    enum { Value = last_index<Tail...>::Value };
+    enum { value = last_index<Tail...>::value };
 };
 
 template <std::size_t Head> struct last_index<Head> {
-    enum { Value = Head };
+    enum { value = Head };
 };
 
 template <std::size_t... Indices> struct index_range { };
 
 template <std::size_t Start, std::size_t... Indices>
 struct index_range<Start, Indices...> {
-    using Next = index_range<Start, Indices..., last_index<Indices...>::Value + 1>;
+    using next = index_range<Start, Indices..., last_index<Indices...>::value + 1>;
 };
 
 template <std::size_t Start> struct index_range<Start> {
-    using Next = index_range<Start, Start + 1>;
+    using next = index_range<Start, Start + 1>;
 };
 
 template <std::size_t Start, std::size_t Num> struct index_range_bulder {
-    using Type = typename index_range_bulder<Start, Num - 1>::Type::Next;
+    using type = typename index_range_bulder<Start, Num - 1>::type::next;
 };
 
 template <std::size_t Start> struct index_range_bulder<Start, 1> {
-    using Type = index_range<Start>;
+    using type = index_range<Start>;
 };
 
 template <std::size_t Start> struct index_range_bulder<Start, 0> {
-    using Type = index_range<>;
+    using type = index_range<>;
 };
 
 template <std::size_t Num>
-  using make_index_sequence = typename index_sequence_bulder<Num>::Type;
+  using make_index_sequence = typename index_sequence_bulder<Num>::type;
 
 template <typename... Args>
   using make_index_sequence_for = make_index_sequence<sizeof... (Args)>;
 
 template <std::size_t Start, std::size_t Num>
-  using make_index_range = typename index_range_bulder<Start, Num>::Type;
+  using make_index_range = typename index_range_bulder<Start, Num>::type;
 
 template <typename Tp>
   struct return_value_setter {
@@ -81,6 +82,9 @@ template<typename Tp>
 
 template <typename...> class curried_function;
 
+/*!
+ * \brief Класс, позволяющий каррировать аргументы функции
+ */
 template <typename Function, typename... BoundArgs>
 class curried_function<Function, BoundArgs...>
 {
@@ -100,10 +104,16 @@ class curried_function<Function, BoundArgs...>
     }
 
 public:
+    /*!
+     * \brief Создает каррированную функцию
+     */
   template <typename Functor, typename... Args>
     explicit curried_function(Functor &&af, Args &&...args)
         : f(std::forward<Functor>(af)), t(std::forward<Args>(args)...) { }
 
+    /*!
+     * \brief Вызывает каррированную функцию
+     */
   template <typename Result, typename... Args>
     void operator()(Result *res, Args &&...args) const {
         apply(res, details::make_index_sequence_for<BoundArgs...>(), std::forward<Args>(args)...);
@@ -112,6 +122,12 @@ public:
 
 template <typename...> class action_base;
 
+/*!
+ * \brief Базовый класс действия
+ *
+ * \tparam Res Тип результата.
+ * \tparam Arguments... Типы аргументов.
+ */
 template <typename Res, typename... Arguments>
 class action_base<Res (Arguments...)>
 {
@@ -179,23 +195,23 @@ protected:
     };
 
 public:
+    /*!
+     * \brief Проверяет, действительно ли объект содержит в себе функцию
+     */
     bool is_valid() const { return bool(holder); }
 
-    action_base() = default;
-    action_base(const action_base &o) : holder(o.holder) { }
-    action_base &operator =(const action_base &o) {
-        holder = o.holder; return *this;
-    }
-    action_base(action_base &&o) : holder(std::move(o.holder)) { }
-    action_base &operator =(action_base &&o) {
-        holder = std::move(o.holder); return *this;
-    }
-
+    /*!
+     * \brief Создает базовый объект действия из функции \a fun
+     */
   template <typename Function, typename HeldType = typename std::decay<Function>::type>
     explicit action_base(Function &&fun)
         : holder(new function_holder<Function>(std::forward<Function>(fun)), holder_destroyer())
     { }
 
+    /*!
+     * \brief Создает базовый объект действия из функции \a fun
+     * с каррированными аргументами \a args
+     */
   template <typename Function, typename... BoundArgs,
             typename HeldType = curried_function<Function, BoundArgs...>>
     explicit action_base(Function &&fun, BoundArgs &&...args)
@@ -207,6 +223,15 @@ public:
 
 template <typename...> class action;
 
+/*!
+ * \brief Инкапсулирует функцию-действие, позволяя каррировать аргументы
+ * и вызывать сохраненную функцию с ранее каррированными аргументами
+ *
+ * \tparam Res Тип результата.
+ * \tparam Arguments... Типы аргументов.
+ *
+ * \sa make_action
+ */
 template <typename Res, typename... Arguments>
 class action<Res (Arguments...)> : public action_base<Res (Arguments...)>
 {
@@ -218,17 +243,19 @@ class action<Res (Arguments...)> : public action_base<Res (Arguments...)>
     }
 
 public:
-    action() = default;
-    action(const action &) = default;
-    action &operator =(const action &) = default;
-    action(action &&) = default;
-    action &operator =(action &&) = default;
-
+    /*!
+     * \brief Создает объект действия из функции \a fun
+     * с каррированными аргументами \a args
+     */
   template <typename Function, typename... BoundArgs>
-    action(Function &&fun, BoundArgs &&...args)
+    /* implicit */ action(Function &&fun, BoundArgs &&...args)
         : action_base<Res (Arguments...)>(std::forward<Function>(fun), std::forward<BoundArgs>(args)...)
     { }
 
+    /*!
+     * \brief Вызывает сохраненную функцию, подставляя в нее
+     * каррированные аргументы и аргументы \a args
+     */
   template <typename... Args, typename = typename
       std::enable_if<std::is_constructible<std::tuple<Arguments...>, std::tuple<Args...>>::value>::type>
     inline Res operator()(Args &&...args) const {
@@ -236,6 +263,12 @@ public:
         return res;
     }
 
+    /*!
+     * \brief Создает действие, содержащее оригинальную функцию
+     * и дополнительно каррирует аргументы \a args
+     *
+     * \snippet core/action.cpp currying
+     */
   template <typename... Args, typename = typename
       std::enable_if<!std::is_constructible<std::tuple<Arguments...>, std::tuple<Args...>>::value>::type>
     auto operator()(Args &&...args) -> decltype(this->apply(
@@ -261,14 +294,8 @@ class action<void (Arguments...)> : public action_base<void (Arguments...)>
     }
 
 public:
-    action() = default;
-    action(const action &) = default;
-    action &operator =(const action &) = default;
-    action(action &&) = default;
-    action &operator =(action &&) = default;
-
   template <typename Function, typename... BoundArgs>
-    action(Function &&fun, BoundArgs &&...args)
+    /* implicit */ action(Function &&fun, BoundArgs &&...args)
         : action_base<void (Arguments...)>(std::forward<Function>(fun), std::forward<BoundArgs>(args)...)
     { }
 
@@ -292,6 +319,9 @@ public:
 
 namespace details {
 
+/*!
+ * \internal
+ */
 template <typename Res, typename... Args, typename Functor,
           typename... BoundArgs, std::size_t... ResultArgsIndices>
   action<Res (typename std::tuple_element<ResultArgsIndices, std::tuple<Args...>>::type...)>
@@ -302,6 +332,9 @@ template <typename Res, typename... Args, typename Functor,
 
 } // namespace details
 
+/*!
+ * \brief Создает действие из переданной функции \a f и аргументов \a args
+ */
 template <typename Res, typename... Args, typename... BoundArgs>
 auto make_action(Res (f)(Args...), BoundArgs &&...args)
   -> decltype(details::make_action_aux<Res, Args...>(std::declval<decltype(f)>(),
@@ -316,6 +349,10 @@ auto make_action(Res (f)(Args...), BoundArgs &&...args)
         std::forward<BoundArgs>(args)...);
 }
 
+/*!
+ * \brief Создает действие из переданного указателя на метод \a f,
+ * объекта \a obj и аргументов \a args
+ */
 template <typename Res, typename Tp, typename Up,
           typename... Args, typename... BoundArgs>
 auto make_action(Res (Tp:: *f)(Args...), Up &&obj, BoundArgs &&...args)
@@ -332,6 +369,9 @@ auto make_action(Res (Tp:: *f)(Args...), Up &&obj, BoundArgs &&...args)
         details::make_index_range<sizeof...(BoundArgs), sizeof...(Args) - sizeof...(BoundArgs)>());
 }
 
+/*!
+ * \copydoc make_action
+ */
 template <typename Res, typename Tp, typename Up,
           typename... Args, typename... BoundArgs>
 auto make_action(Res (Tp:: *f)(Args...) const, Up &&obj, BoundArgs &&...args)
