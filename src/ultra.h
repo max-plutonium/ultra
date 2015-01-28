@@ -4,45 +4,13 @@
 #include <future>
 #include <mutex>
 #include <condition_variable>
-#include <boost/coroutine/all.hpp>
+
+#include <boost/thread/executors/work.hpp>
 
 #include "ultra_global.h"
 #include "core/action.h"
 
 namespace ultra {
-
-class task;
-
-/*!
- * \brief Интерфейс исполнителя задач
- */
-class execution_service
-{
-public:
-    /*!
-     * \brief Помещает задачу в очередь
-     */
-    virtual void execute(std::shared_ptr<task> ptask) = 0;
-
-    /*!
-     * \brief Помещает задачу в очередь, планируя время её исполнения
-     *
-     * Исполняет задачу отложенно с задержкой \a delay_msecs миллисекунд
-     * и затем повторяя каждые \a period_msecs миллисекунд.
-     */
-    virtual void execute_with_delay(std::shared_ptr<task> ptask,
-        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) = 0;
-
-    /*!
-     * \brief Завершает все начатые операции
-     */
-    virtual void shutdown() = 0;
-
-    /*!
-     * \brief Возвращает true, если исполнитель задач остановлен
-     */
-    virtual bool stopped() const = 0;
-};
 
 /*!
  * \brief Общий интерфейс задачи, которую необходимо выполнить
@@ -81,6 +49,19 @@ struct task_prio_greather : std::binary_function<task_ptr, task_ptr, bool>
 {
     bool operator()(const task_ptr &lhs, const task_ptr &rhs) const;
     bool operator()(const task &lhs, const task &rhs) const;
+};
+
+/*!
+ * \internal
+ */
+class work_task final : public task
+{
+    boost::executors::work _w;
+
+public:
+    explicit work_task(int prio, boost::executors::work w)
+        : task(prio), _w(std::move(w)) { }
+    virtual void run() override { _w(); }
 };
 
 /*!
@@ -183,6 +164,60 @@ public:
 };
 
 /*!
+ * \brief Интерфейс исполнителя задач
+ */
+class execution_service
+{
+public:
+    /*!
+     * \brief Помещает задачу в очередь
+     */
+    virtual void execute(std::shared_ptr<task> ptask) = 0;
+
+    /*!
+     * \brief Помещает задачу в очередь, планируя время её исполнения
+     *
+     * Исполняет задачу отложенно с задержкой \a delay_msecs миллисекунд
+     * и затем повторяя каждые \a period_msecs миллисекунд.
+     */
+    virtual void execute_with_delay(std::shared_ptr<task> ptask,
+        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) = 0;
+
+    /*!
+     * \brief Завершает все начатые операции
+     */
+    virtual void shutdown() = 0;
+
+    /*!
+     * \brief Возвращает true, если исполнитель задач остановлен
+     */
+    virtual bool stopped() const = 0;
+
+    /*!
+     * \copydoc execute()
+     */
+  template <typename Function>
+    inline void submit(Function &&f) {
+        execute(std::make_shared<work_task>(0, std::forward<Function>(f)));
+    }
+
+    /*!
+     * \brief Пытается выполнить одну задачу из очереди
+     */
+    virtual bool try_executing_one() = 0;
+
+    /*!
+     * \copydoc shutdown()
+     */
+    inline void close() { shutdown(); }
+
+    /*!
+     * \copydoc stopped()
+     */
+    inline bool closed() const { return stopped(); }
+};
+
+/*!
  * \brief Тип планирования исполнения задач
  */
 enum class schedule_type {
@@ -244,34 +279,6 @@ public:
 };
 
 using sched_ptr = std::shared_ptr<scheduler>;
-
-namespace bc = boost::coroutines;
-
-template <typename AsyncResult>
-class execution_unit : public function_task<AsyncResult ()>,
-        public bc::symmetric_coroutine<void>::call_type
-{
-protected:
-    using _base1 = function_task<AsyncResult ()>;
-    using _base2 = bc::symmetric_coroutine<void>::call_type;
-
-    std::unique_ptr<typename bc::symmetric_coroutine<AsyncResult>::call_type> _coro;
-
-    virtual void sched_context(bc::symmetric_coroutine<void>::yield_type &yield) = 0;
-    virtual AsyncResult task_context(typename
-        bc::symmetric_coroutine<AsyncResult>::yield_type &yield) = 0;
-
-public:
-    explicit execution_unit(int prio = 0, std::size_t stack_size = 8192)
-        : _base1(prio, [this]() { (*this)(); })
-        , _base2(std::bind(&execution_unit::sched_context, this, std::placeholders::_1),
-                boost::coroutines::attributes(stack_size))
-        , _coro(new typename bc::symmetric_coroutine<AsyncResult>::call_type(
-                    std::bind(&execution_unit::task_context, this, std::placeholders::_1),
-                                    boost::coroutines::attributes(stack_size)))
-    {
-    }
-};
 
 } // namespace ultra
 

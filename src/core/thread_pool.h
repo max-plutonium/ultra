@@ -94,6 +94,7 @@ public:
     void clear();
     virtual void shutdown() override;
     virtual bool stopped() const override;
+    virtual bool try_executing_one() override;
 
     friend struct thread_worker;
 
@@ -103,17 +104,16 @@ public:
      *
      * \return Объект будущего результата задачи.
      */
-  template <typename Res, typename... Args>
-      std::future<Res>
-    execute_callable(int prio, action<Res (Args...)> &&fun)
-    {
-        using task_type = function_task<Res (Args...)>;
-        auto ptask = std::make_shared<task_type>(prio, std::move(fun));
-        std::future<Res> ret = ptask->get_future();
+    template <typename Res, typename... Args>
+      std::future<Res> execute_callable(int prio, action<Res (Args...)> &&fun)
+      {
+          using task_type = function_task<Res (Args...)>;
+          auto ptask = std::make_shared<task_type>(prio, std::move(fun));
+          std::future<Res> ret = ptask->get_future();
 
-        execute(std::move(ptask));
-        return ret;
-    }
+          execute(std::move(ptask));
+          return ret;
+      }
 
     /*!
      * \brief Конструирует задачу из функции \a fun с
@@ -122,12 +122,11 @@ public:
      *
      * \return Объект будущего результата задачи.
      */
-  template <typename Function, typename... Args>
-      auto
-    execute_callable(int prio, Function &&fun, Args &&...args)
+    template <typename Function, typename... Args>
+      auto execute_callable(int prio, Function &&fun, Args &&...args)
       {
-          return execute_callable(prio,
-            core::make_action(std::forward<Function>(fun), std::forward<Args>(args)...));
+          return execute_callable(prio, core::make_action(
+            std::forward<Function>(fun), std::forward<Args>(args)...));
       }
 };
 
