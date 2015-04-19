@@ -164,7 +164,7 @@ public:
 
 
 /*!
- * \internal
+ * \brief Базовый класс сопроцедуры
  */
 class coroutine_task_base
 {
@@ -192,8 +192,21 @@ public:
     void yield();
 };
 
+namespace this_coroutine {
+    void yield();
+}
+
 template <typename...> class coroutine_task;
 
+/*!
+ * \brief Класс, содержащий упакованную конкретную задачу и позволяющий
+ * отправить ее на выполнение в отдельном стеке в виде сопроцедуры
+ *
+ * \tparam Res Результат функции.
+ * \tparam Args... Аргументы функции.
+ *
+ * \sa function_task<Res (Args...)>
+ */
 template <typename Res, typename... Args>
 class coroutine_task<Res (Args...)> : public coroutine_task_base
   , public function_task<Res (Args...)>
@@ -202,7 +215,7 @@ class coroutine_task<Res (Args...)> : public coroutine_task_base
 
 public:
     /*!
-     * \brief Конструирует задачу по переданным параметрам
+     * \brief Конструирует сопроцедуру по переданным параметрам
      *
      * \param prio Приоритет задачи.
      * \param fun Функция задачи.
@@ -214,6 +227,7 @@ public:
         , _base(prio, std::forward<Function>(fun), std::forward<Args2>(args)...)
     { }
 
+    /// Деструктор
     virtual ~coroutine_task() override
     {
         assert(_state != running);
@@ -240,8 +254,7 @@ public:
 
     // coroutine_task_base interface
 protected:
-    virtual void schedule() override
-    {
+    virtual void schedule() override {
         _base::run();
     }
 };
