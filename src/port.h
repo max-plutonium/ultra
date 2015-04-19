@@ -36,8 +36,10 @@ public:
     void disconnect(const port &);
 
 protected:
+    explicit port(std::shared_ptr<impl> &&d, ultra::openmode om = ultra::openmode::inout);
     friend class port_message;
     friend class vm;
+    friend class reaction;
 };
 
 using port_ptr = std::shared_ptr<port>;

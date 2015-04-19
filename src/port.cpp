@@ -64,7 +64,7 @@ bool port::impl::connect_sender(const std::shared_ptr<port::impl> &asender)
 {
     assert(asender);
     auto it = std::find_if(_senders.cbegin(),
-        _senders.cend(), [&asender](const auto &entry) {
+        _senders.cend(), [&asender](const std::shared_ptr<port::impl> &entry) {
             return asender == entry;
         });
 
@@ -79,7 +79,7 @@ bool port::impl::connect_receiver(const std::shared_ptr<port::impl> &areceiver)
 {
     assert(areceiver);
     auto it = std::find_if(_receivers.cbegin(),
-        _receivers.cend(), [&areceiver](const auto &entry) {
+        _receivers.cend(), [&areceiver](const std::shared_ptr<port::impl> &entry) {
             return areceiver == entry;
         });
 
@@ -93,8 +93,8 @@ bool port::impl::connect_receiver(const std::shared_ptr<port::impl> &areceiver)
 void port::impl::disconnect_sender(const std::shared_ptr<port::impl> &asender)
 {
     assert(asender);
-    auto it = std::find_if(_senders.cbegin(),
-        _senders.cend(), [&asender](const auto &entry) {
+    auto it = std::find_if(_senders.begin(),
+        _senders.end(), [&asender](const std::shared_ptr<port::impl> &entry) {
             return asender == entry;
         });
 
@@ -105,8 +105,8 @@ void port::impl::disconnect_sender(const std::shared_ptr<port::impl> &asender)
 void port::impl::disconnect_receiver(const std::shared_ptr<port::impl> &areceiver)
 {
     assert(areceiver);
-    auto it = std::find_if(_receivers.cbegin(),
-        _receivers.cend(), [&areceiver](const auto &entry) {
+    auto it = std::find_if(_receivers.begin(),
+        _receivers.end(), [&areceiver](const std::shared_ptr<port::impl> &entry) {
             return areceiver == entry;
         });
 
@@ -181,6 +181,14 @@ void port::disconnect(const port &areceiver)
     port_message msg(port_message::disconnect_sender, _impl,
                 areceiver._impl, _time);
     vm::instance()->post_message(std::move(msg));
+}
+
+port::port(std::shared_ptr<impl> &&d, ultra::openmode om)
+    : std::stringstream(static_cast<std::ios_base::openmode>(om))
+    , _impl(std::move(d))
+{
+    std::iostream::rdbuf(_impl.get());
+    this->init(_impl.get());
 }
 
 } // namespace ultra

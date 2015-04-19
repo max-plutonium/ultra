@@ -598,6 +598,7 @@ int system::join_process(int pid)
 #endif
 }
 
+/*static*/
 void system::kill_process(int pid)
 {
 #ifdef __unix__

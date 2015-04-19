@@ -3,6 +3,8 @@
 
 #include <exception>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 
 namespace ultra { namespace core {
 
@@ -50,9 +52,55 @@ public:
 
     Tp &get() noexcept { return *_ptr; }
 
-    bool isReady() const { return static_cast<bool>(_ptr); }
+    bool is_ready() const { return static_cast<bool>(_ptr); }
 
     using result_type = Tp;
+
+protected:
+    result(destroyer d) : result_base(d) { }
+};
+
+template <typename Tp> class result<Tp &> : public result_base
+{
+private:
+    static void destroy(result_base *thiz) {
+        delete static_cast<result *>(thiz);
+    }
+
+    Tp *_ptr = nullptr;
+
+public:
+    result() : result_base(&destroy) { }
+
+    void set(Tp &res) noexcept { _ptr = std::addressof(res); }
+
+    Tp &get() noexcept { return *_ptr; }
+
+    bool is_ready() const { return static_cast<bool>(_ptr); }
+
+    using result_type = Tp &;
+
+protected:
+    result(destroyer d) : result_base(d) { }
+};
+
+template <> struct result<void> : public result_base
+{
+private:
+    static void destroy(result_base *thiz) {
+        delete static_cast<result *>(thiz);
+    }
+
+public:
+    result() : result_base(&destroy) { }
+
+    void set(void *) noexcept { }
+
+    void *get() noexcept { return nullptr; }
+
+    bool is_ready() const { return true; }
+
+    using ResultType = void;
 
 protected:
     result(destroyer d) : result_base(d) { }

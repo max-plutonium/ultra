@@ -28,7 +28,21 @@ class thread_pool : public execution_service
     sched_ptr  _sched;
     std::atomic_bool _shutdown;
 
-    struct worker;
+public:
+    struct worker
+    {
+        sched_ptr _sched;
+        thread_pool *_pool;
+        std::condition_variable _cond;
+
+        explicit worker(sched_ptr s, thread_pool *pool);
+        virtual ~worker() = default;
+        virtual void start(task_ptr t) = 0;
+        virtual void join() = 0;
+        virtual void run() = 0;
+    };
+
+private:
     using worker_ptr = std::shared_ptr<worker>;
     using worker_list = std::list<worker_ptr>;
     using worker_id = worker_list::iterator;
@@ -44,19 +58,7 @@ class thread_pool : public execution_service
     mutable std::mutex _lock;
     std::condition_variable _no_active_threads;
 
-    struct worker
-    {
-        sched_ptr _sched;
-        thread_pool *_pool;
-        std::condition_variable _cond;
-
-        explicit worker(sched_ptr s, thread_pool *pool);
-        virtual ~worker() = default;
-        virtual void start(task_ptr t) = 0;
-        virtual void join() = 0;
-        virtual void run() = 0;
-    };
-
+private:
     void _start_thread(task_ptr);
     std::size_t _active_thread_count() const;
     bool _too_many_active_threads() const;

@@ -4,13 +4,21 @@
 #include <future>
 #include <mutex>
 #include <condition_variable>
-
-#include <boost/thread/executors/work.hpp>
+#include <cassert>
 
 #include "ultra_global.h"
 #include "core/action.h"
+#include "core/system.h"
 
 namespace ultra {
+
+/*!
+ * \brief Исключение, с помощью которого реализуется раскрутка стека задачи
+ */
+struct task_forced_unwind final : public std::exception
+{
+    virtual const char *what() const noexcept override;
+};
 
 /*!
  * \brief Общий интерфейс задачи, которую необходимо выполнить
@@ -54,19 +62,6 @@ struct task_prio_greather : std::binary_function<task_ptr, task_ptr, bool>
 /*!
  * \internal
  */
-class work_task final : public task
-{
-    boost::executors::work _w;
-
-public:
-    explicit work_task(int prio, boost::executors::work w)
-        : task(prio), _w(std::move(w)) { }
-    virtual void run() override { _w(); }
-};
-
-/*!
- * \internal
- */
 template <typename Res>
 class function_task_base : public task
 {
@@ -80,13 +75,15 @@ protected:
           try {
               _promise.set_value(task(std::get<Indices>(args)...));
 
+          } catch(const task_forced_unwind &forced_unwind) {
+              throw forced_unwind;
+
           } catch(...) {
               _promise.set_exception(std::current_exception());
           }
       }
 
-public:
-      function_task_base(int prio = 0) : task(prio) { }
+    explicit function_task_base(int prio = 0) : task(prio) { }
 };
 
 /*!
@@ -106,13 +103,15 @@ protected:
               task(std::get<Indices>(args)...);
               _promise.set_value();
 
+          } catch(const task_forced_unwind &forced_unwind) {
+              throw forced_unwind;
+
           } catch(...) {
               _promise.set_exception(std::current_exception());
           }
       }
 
-public:
-      function_task_base(int prio = 0) : task(prio) { }
+    explicit function_task_base(int prio = 0) : task(prio) { }
 };
 
 template <typename...> class function_task;
@@ -136,7 +135,7 @@ class function_task<Res (Args...)> : public function_task_base<Res>
     using _base = function_task_base<Res>;
     using result_type = Res;
     core::action<result_type (Args...)> _task;
-    std::tuple<std::decay_t<Args>...> _args;
+    std::tuple<typename std::decay<Args>::type...> _args;
 
 public:
     /*!
@@ -152,7 +151,7 @@ public:
         , _args(std::forward<Args2>(args)...)
     { }
 
-    virtual void run() final override {
+    virtual void run() override {
         this->call(_task, _args, core::details::make_index_sequence_for<Args...>());
     }
 
@@ -161,6 +160,90 @@ public:
      */
     std::future<result_type>
     get_future() { return this->_promise.get_future(); }
+};
+
+
+/*!
+ * \internal
+ */
+class coroutine_task_base
+{
+protected:
+    core::machine_context *_ctx;
+    core::machine_stack _stack;
+    std::exception_ptr _exception;
+
+    enum state {
+        not_init, ready, running, paused, canceled, finished, error
+    };
+
+    state _state;
+
+    static std::intptr_t start(std::intptr_t arg);
+    explicit coroutine_task_base(std::size_t stack_size);
+    virtual ~coroutine_task_base();
+    void lazy_init();
+    void unwind();
+    virtual void schedule() = 0;
+
+public:
+    void set_stack_size(std::size_t stack_size);
+    std::size_t stack_size() const;
+    void yield();
+};
+
+template <typename...> class coroutine_task;
+
+template <typename Res, typename... Args>
+class coroutine_task<Res (Args...)> : public coroutine_task_base
+  , public function_task<Res (Args...)>
+{
+    using _base = function_task<Res (Args...)>;
+
+public:
+    /*!
+     * \brief Конструирует задачу по переданным параметрам
+     *
+     * \param prio Приоритет задачи.
+     * \param fun Функция задачи.
+     * \param args Аргументы задачи.
+     */
+  template <typename Function, typename... Args2>
+    explicit coroutine_task(int prio, Function &&fun, Args2 &&...args)
+        : coroutine_task_base(core::system::default_stacksize())
+        , _base(prio, std::forward<Function>(fun), std::forward<Args2>(args)...)
+    { }
+
+    virtual ~coroutine_task() override
+    {
+        assert(_state != running);
+
+        if(_state == paused)
+            unwind();
+    }
+
+    virtual void run() override
+    {
+        if(_state == not_init) {
+            lazy_init();
+            _state = ready;
+        }
+
+        assert(_state == ready || _state == paused);
+
+        _state = running;
+        _state = (state) core::system::install_context(_ctx, std::intptr_t(this));
+
+        assert(_state == paused || _state == canceled
+            || _state == finished || _state == error);
+    }
+
+    // coroutine_task_base interface
+protected:
+    virtual void schedule() override
+    {
+        _base::run();
+    }
 };
 
 /*!
@@ -198,7 +281,7 @@ public:
      */
   template <typename Function>
     inline void submit(Function &&f) {
-        execute(std::make_shared<work_task>(0, std::forward<Function>(f)));
+        execute(std::make_shared<function_task>(0, std::forward<Function>(f)));
     }
 
     /*!

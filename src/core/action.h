@@ -71,7 +71,7 @@ template <typename Tp>
 template<typename Tp, typename Up>
   void operator ,(Tp &&value, const return_value_setter<Up> &setter) {
       if (setter.ptr)
-          *reinterpret_cast<Up*>(setter.ptr) = std::forward<Tp>(value);
+          *reinterpret_cast<Up *>(setter.ptr) = std::forward<Tp>(value);
   }
 
 template<typename Tp>

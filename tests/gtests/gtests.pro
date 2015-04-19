@@ -16,7 +16,6 @@ QMAKE_CXXFLAGS_RELEASE += -Ofast
 load(ultra_boost)
 load(ultra_cds)
 load(ultra_gtest)
-load(ultra_jit)
 
 BUILDROOT = ../../bin
 
@@ -55,7 +54,6 @@ SOURCES += \
     test_address.cpp \
     test_concurrent_queue.cpp \
     test_ordered_lock.cpp \
-    test_libjit.cpp \
     test_schedulers.cpp \
     test_system.cpp \
     test_thread_pool.cpp \
@@ -63,4 +61,5 @@ SOURCES += \
     test_logic_time.cpp \
     test_port.cpp \
     test_execution_service.cpp \
-    test_network_session.cpp
+    test_network_session.cpp \
+    test_interp.cpp

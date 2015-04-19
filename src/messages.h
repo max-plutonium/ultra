@@ -96,13 +96,7 @@ public:
 
     bool operator==(const port_message &o) const;
     bool operator!=(const port_message &o) const;
-
-//    friend std::ostream &operator<<(std::ostream &o, const port_message &msg);
-//    friend std::istream &operator>>(std::istream &i, port_message &msg);
 };
-
-//std::ostream &operator<<(std::ostream &o, const port_message &msg);
-//std::istream &operator>>(std::istream &i, port_message &msg);
 
 } // namespace ultra
 
