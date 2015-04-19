@@ -22,6 +22,102 @@ public:
     enum { value = check<Tp>(nullptr, nullptr) };
 };
 
+/*!
+ * \brief Класс спин-блокировки
+ */
+class spinlock
+{
+    char _pad[8];
+
+    void _sleep() const noexcept;
+
+public:
+    using duration_type = std::chrono::microseconds;
+
+    /*!
+     * \brief Создает спин-блокировку
+     *
+     * \param duration_usecs Количество микросекунд ожидания на
+     * захваченной блокировке
+     */
+    explicit spinlock(unsigned int duration_usecs = 0) noexcept;
+
+    /*!
+     * Уничтожает спин-блокировку
+     */
+    ~spinlock() noexcept;
+
+#ifndef DOXYGEN
+    spinlock(const spinlock&) = delete;
+    spinlock &operator=(const spinlock&) = delete;
+    spinlock(spinlock&&) = delete;
+    spinlock &operator=(spinlock&&) = delete;
+#endif
+
+    /*!
+     * \brief Захватывает блокировку
+     */
+    void lock() noexcept;
+
+    /*!
+     * \brief Снимает блокировку
+     */
+    void unlock() noexcept;
+
+    /*!
+     * \brief Пытается захватить блокировку \a n раз
+     *
+     * \return true, если блокировка захвачена
+     */
+    bool try_lock(unsigned n = 1) noexcept;
+
+    /*!
+     * \brief Пытается захватить блокировку до наступления времени \a atime
+     *
+     * \return true, если блокировка захвачена
+     */
+  template <class Clock, class Duration>
+    inline bool
+    try_lock_until(const std::chrono::time_point<Clock, Duration> &atime)
+    {
+        while(!try_lock()) {
+            if(std::chrono::system_clock::now() >= atime)
+                return false;
+            _sleep();
+        }
+        return true;
+    }
+
+    /*!
+     * \brief Пытается захватить блокировку в течение \a rtime
+     *
+     * \return true, если блокировка захвачена
+     */
+  template <class Rep, class Period>
+    inline bool
+    try_lock_for(const std::chrono::duration<Rep, Period>& rtime)
+    { return try_lock_until(std::chrono::system_clock::now() + rtime); }
+
+    /*!
+     * \brief Возвращает время ожидания на захваченной блокировке
+     */
+    unsigned get_sleep_dur() noexcept;
+
+    /*!
+     * \brief Устанавливает время ожидания на захваченной блокировке \a usecs
+     */
+    void set_sleep_dur(unsigned usecs) noexcept;
+
+    /// Устанавливает период ожидания спинлока \a rtime
+  template <class Rep, class Period>
+    inline void
+    set_sleep_dur(const std::chrono::duration<Rep, Period> &rtime)
+    { set_sleep_dur(std::chrono::duration_cast<duration_type>(rtime).count()); }
+
+    /// Сбрасывает период ожидания спинлока
+    inline void reset_sleep_dur() noexcept { set_sleep_dur(0); }
+};
+
 
 /*!
  * \brief Необходим для упорядоченного захвата блокировок
