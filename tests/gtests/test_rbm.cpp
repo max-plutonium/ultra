@@ -40,4 +40,6 @@ TEST(test_rbm, create)
 
         store_data_to_file("out/" + boost::lexical_cast<std::string>(i) + ".txt", reconstructed);
     }
+
+    store_matrix_to_file("out/weights.wgt", machine.weights());
 }
