@@ -99,9 +99,9 @@ std::vector<std::vector<Tp>> load_data_from_dir(const std::string &dir_name = ".
     bfs::directory_iterator rdib(dir_name), rdie;
 
     std::copy_if(rdib, rdie, std::back_inserter(files),
-        [ext](const bfs::directory_entry &entry) {
-            return entry.path().extension() == ext;
-        });
+                 [ext](const bfs::directory_entry &entry) {
+        return entry.path().extension() == ext;
+    });
 
     std::vector<std::vector<Tp>> res;
     std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
@@ -121,9 +121,9 @@ std::vector<ublas::matrix<Tp>> load_matrixes_from_dir(
     bfs::directory_iterator rdib(dir_name), rdie;
 
     std::copy_if(rdib, rdie, std::back_inserter(files),
-        [ext](const bfs::directory_entry &entry) {
-            return entry.path().extension() == ext;
-        });
+                 [ext](const bfs::directory_entry &entry) {
+        return entry.path().extension() == ext;
+    });
 
     std::vector<ublas::matrix<Tp>> res;
     std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
@@ -161,7 +161,7 @@ public:
     rbm(std::size_t size, std::size_t n_v, std::size_t n_h);
 
     void contrastive_divergence(const std::vector<int> &input,
-                                float lr, int sampling_iterations);
+                                float lr, std::size_t sampling_iterations);
 
     std::vector<float> reconstruct(const std::vector<int> &v) const;
 

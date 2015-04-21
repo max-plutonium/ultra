@@ -35,7 +35,7 @@ void rbm::sample_h_given_v(const std::vector<int> &v0_sample,
 }
 
 void rbm::sample_v_given_h(const std::vector<int> &h0_sample,
-                                  std::vector<float> &mean, std::vector<int> &sample)
+                           std::vector<float> &mean, std::vector<int> &sample)
 {
     for(std::size_t i = 0; i < _nr_visible; i++) {
         mean[i] = propdown(h0_sample, i, _vbias[i]);
@@ -45,10 +45,10 @@ void rbm::sample_v_given_h(const std::vector<int> &h0_sample,
 }
 
 void rbm::gibbs_hvh(const std::vector<int> &h0_sample,
-                           std::vector<float> &nv_means,
-                           std::vector<int> &nv_samples,
-                           std::vector<float> &nh_means,
-                           std::vector<int> &nh_samples)
+                    std::vector<float> &nv_means,
+                    std::vector<int> &nv_samples,
+                    std::vector<float> &nh_means,
+                    std::vector<int> &nh_samples)
 {
     sample_v_given_h(h0_sample, nv_means, nv_samples);
     sample_h_given_v(nv_samples, nh_means, nh_samples);
@@ -67,7 +67,7 @@ rbm::rbm(std::size_t size, std::size_t n_v, std::size_t n_h)
 }
 
 void rbm::contrastive_divergence(const std::vector<int> &input,
-                                 float lr, int sampling_iterations)
+                                 float lr, std::size_t sampling_iterations)
 {
     std::vector<float>  ph_mean(_nr_hidden);
     std::vector<int>    ph_sample(_nr_hidden);
@@ -87,7 +87,7 @@ void rbm::contrastive_divergence(const std::vector<int> &input,
 
     for(std::size_t i = 0; i < _nr_hidden; i++) {
         for(std::size_t j = 0; j < _nr_visible; j++)
-            // W(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / N;
+            // _weights(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
             _weights(i, j) += lr * (ph_mean[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
 
         _hbias[i] += lr * (ph_sample[i] - nh_means[i]) / _size;
