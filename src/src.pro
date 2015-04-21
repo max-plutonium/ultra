@@ -84,7 +84,10 @@ HEADERS += \
     core/core_p.h \
     core/schedulers.h \
     core/network_session.h \
-    messages.h
+    messages.h \
+    genetic.h \
+    node.h \
+    rbm.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -104,7 +107,11 @@ SOURCES += \
     core/core.cpp \
     core/schedulers.cpp \
     core/network_session.cpp \
-    messages.cpp
+    messages.cpp \
+    genetic.cpp \
+    node.cpp \
+    core/locks.cpp \
+    rbm.cpp
 
 ### Install settings ###
 
@@ -115,6 +122,7 @@ target.path = ../lib
 INSTALLS += target headerTarget
 
 DISTFILES += \
+    ../examples/core/action.cpp \
     ../examples/core/concurrent_queue.cpp \
     ../examples/core/thread_pool.cpp \
     ../examples/ultra.cpp

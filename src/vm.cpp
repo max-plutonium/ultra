@@ -1,9 +1,6 @@
 #include <boost/program_options.hpp>
-#include <boost/graph/graph_utility.hpp>
 #include <boost/asio/spawn.hpp>
 #include <functional>
-#include <fstream>
-#include <cmath>
 
 #include <cds/init.h>
 
@@ -89,25 +86,6 @@ namespace po = boost::program_options;
 
 vm *g_instance;
 
-std::vector<float> vm::load_from_file(const std::string &file_name)
-{
-    std::vector<float> vec;
-    std::ifstream ifs(file_name.c_str(), std::ios::binary);
-    std::istream_iterator<float> ii(ifs);
-
-    std::copy(ii, std::istream_iterator<float>(), std::back_inserter(vec));
-    ifs.close();
-    return vec;
-}
-
-void vm::store_to_file(const std::string &file_name, const std::vector<float> &vec)
-{
-    std::ofstream ofs(file_name.c_str(), std::ios_base::out);
-    const char *delim = " ";
-    std::copy(vec.begin(), vec.end(), std::ostream_iterator<float>(ofs, delim));
-    ofs.close();
-}
-
 vm::vm(int argc, const char **argv)
 {
     g_instance = this;
@@ -134,7 +112,7 @@ vm::vm(int argc, const char **argv)
     std::size_t num_network_threads = 1;
     std::size_t num_ios = 1;
     std::string addr = "127.0.0.1";
-    std::string port = "55699";
+    std::string port = "55799";
     int cluster = 0;
 
     if (vm.count("num-threads"))
@@ -187,83 +165,8 @@ void vm::loop()
 
 void vm::post_message(port_message msg)
 {
-    d->_work_threads.execute_callable(1, core::make_action(
-            &port::impl::on_message, msg.receiver(), std::move(msg)));
-}
-
-void vm::create_field(std::size_t input_size, std::size_t output_size)
-{
-    _inputs.resize(input_size);
-    std::generate(_inputs.begin(), _inputs.end(),
-                  [&] { return std::make_shared<port>(); });
-    _outputs.resize(output_size);
-    std::generate(_outputs.begin(), _outputs.end(),
-                  [&] { return std::make_shared<port>(); });
-}
-
-vm::node_iterator vm::create_interp(std::size_t in_index, std::size_t out_indices)
-{
-    interp i;
-    i._out_index = out_indices;
-    vertex_property vp { in_index };
-    auto d = boost::add_vertex(vp, i._g);
-    return std::make_pair(_interps.emplace(_interps.end(), i), d);
-}
-
-vm::node_iterator vm::create_child_vertex(vm::node_iterator it, std::size_t in_index, float weight)
-{
-    graph_type &g = it.first->_g;
-    vertex_property vp { in_index };
-    auto child_vd = boost::add_vertex(vp, g);
-    edge_property ep { weight };
-    boost::add_edge(it.second, child_vd, ep, g);
-    return std::make_pair(it.first, child_vd);
-}
-
-void vm::dump(vm::node_iterator it)
-{
-    boost::print_graph(it.first->_g);
-}
-
-constexpr static inline float sigma(float value) {
-    return 1 / (1 + std::exp(-value));
-}
-
-float vm::interp_recursive(vm::node_iterator it)
-{
-    float res = 0.0f;
-
-    using adj_iter = boost::graph_traits<graph_type>::adjacency_iterator;
-    std::pair<adj_iter, adj_iter> adj_vertex_pair;
-    for(adj_vertex_pair = boost::adjacent_vertices(it.second, it.first->_g);
-        adj_vertex_pair.first != adj_vertex_pair.second; ++adj_vertex_pair.first)
-    {
-        res += interp_recursive(std::make_pair(it.first, *adj_vertex_pair.first));
-        std::size_t idx = it.first->_g[*adj_vertex_pair.first]._idx;
-
-        auto edge_descr = boost::edge(it.second, *adj_vertex_pair.first, it.first->_g).first;
-        auto weight = boost::get(boost::edge_weight, it.first->_g, edge_descr);
-
-        float f;
-        *_inputs.at(idx) >> f;
-        res += weight * sigma(f);
-    }
-
-    return res;
-}
-
-void vm::interpret()
-{
-    for(auto it = _interps.begin(); it != _interps.end(); ++it)
-    {
-        interp &i = *it;
-        float res = interp_recursive(std::make_pair(it, boost::vertex(0, i._g)));
-        float f;
-        *_inputs.at(i._g[0]._idx) >> f;
-        res += sigma(f);
-        *_outputs[i._out_index] << sigma(res);
-        continue;
-    }
+    d->next_io_service()->post(core::make_action(
+        &port::impl::on_message, msg.receiver(), std::move(msg)));
 }
 
 } // namespace ultra

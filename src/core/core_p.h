@@ -7,6 +7,7 @@
 #include <cds/gc/hp.h>
 
 #include "../vm.h"
+
 #include "core/ioservice_pool.h"
 #include "core/thread_pool.h"
 #include "messages.h"
@@ -64,7 +65,7 @@ public:
 
     explicit impl(port *p, ultra::openmode om);
 
-    virtual std::streamsize xsputn(const char_type *s, std::streamsize n);
+    virtual std::streamsize xsputn(const char_type *s, std::streamsize n) override;
 
     void on_message(const port_message &msg);
     bool connect_sender(const std::shared_ptr<port::impl> &asender);
@@ -79,4 +80,3 @@ public:
 } // namespace ultra
 
 #endif // CORE_P_H
-

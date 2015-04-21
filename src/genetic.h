@@ -30,6 +30,11 @@ public:
 
     const std::deque<gene_t> &chromosomes() const;
 
+    gene_t operator[](std::size_t idx) { return _genome[idx]; }
+    const gene_t at(std::size_t idx) const { return _genome.at(idx); }
+
+    std::size_t size() const { return _genome_size; }
+
     // Инициализация
     void init_random();
 

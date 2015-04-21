@@ -112,7 +112,7 @@ std::deque<std::size_t> genome::selection(selection_type sel_type,
                 if(i == 0 && selector <= wheel[1]) {
                     indices.push_back(i);
                     break;
-                } else if((selector > wheel[i - 1]) &&
+                } else if(i != 0 && (selector > wheel[i - 1]) &&
                           (selector <= wheel[i])) {
                     indices.push_back(i);
                     break;
@@ -190,5 +190,3 @@ void genome::mutate(float mutation_percent)
 }
 
 } // namespace ultra
-
-

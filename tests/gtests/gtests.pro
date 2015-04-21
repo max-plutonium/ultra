@@ -62,4 +62,4 @@ SOURCES += \
     test_port.cpp \
     test_execution_service.cpp \
     test_network_session.cpp \
-    test_interp.cpp
+    test_rbm.cpp
