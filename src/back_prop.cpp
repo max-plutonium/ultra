@@ -75,6 +75,7 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
     fprop(input);
 
     layer &last_layer = _layers[_layers.size() - 1];
+    const auto layers_size = _layers.size();
 
     // The next step is to find the delta for the output layer
     for(std::size_t i = 0; i < last_layer._nr_neurons; i++)
@@ -82,7 +83,7 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
             * (1 - last_layer._outputs[i]) * (target[i] - last_layer._outputs[i]);
 
     // then find the delta for the hidden layers
-    for(std::size_t i = _layers.size() - 2; i > 0; i--)
+    for(std::size_t i = layers_size - 2; i > 0; i--)
     {
         layer &cur_layer = _layers[i];
         layer &next_layer = _layers[i + 1];
@@ -100,7 +101,7 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
     }
 
     // Apply momentum (does nothing if alpha = 0)
-    for(std::size_t i = 1; i < _layers.size(); i++)
+    for(std::size_t i = 1; i < layers_size; i++)
     {
         layer &cur_layer = _layers[i];
         layer &prev_layer = _layers[i - 1];
@@ -117,7 +118,7 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
 
     // Finally, adjust the weights by finding the correction to the weight.
     // And then apply the correction
-    for(std::size_t i = 1; i < _layers.size(); i++)
+    for(std::size_t i = 1; i < layers_size; i++)
     {
         layer &cur_layer = _layers[i];
         layer &prev_layer = _layers[i - 1];
@@ -165,9 +166,14 @@ std::size_t back_prop::num_outputs() const
     return _layers.back()._nr_neurons;
 }
 
+std::size_t back_prop::num_layers() const
+{
+    return _layers.size();
+}
+
 ublas::matrix<float> back_prop::weights(std::size_t layer) const
 {
-    auto vec = _layers[layer]._weights;
+    const auto &vec = _layers[layer]._weights;
     ublas::matrix<float> res(_layers[layer]._nr_neurons, vec.front().size());
     for(std::size_t i = 0; i < vec.size(); i++)
         for(std::size_t j = 0; j < vec[i].size(); j++)
@@ -177,7 +183,7 @@ ublas::matrix<float> back_prop::weights(std::size_t layer) const
 
 bool back_prop::set_weights(std::size_t layer, const ublas::matrix<float> &matrix)
 {
-    auto vec = _layers[layer]._weights;
+    auto &vec = _layers[layer]._weights;
     if(matrix.size1() != vec.size() || matrix.size2() != vec.front().size())
         return false;
 

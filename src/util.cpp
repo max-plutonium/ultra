@@ -12,8 +12,11 @@ std::vector<float> load_data_from_file(const std::string &file_name)
 {
     std::vector<float> vec;
     std::ifstream ifs(file_name.c_str(), std::ios_base::in);
-    std::istream_iterator<float> ii(ifs);
 
+    if(!ifs.is_open())
+        return vec;
+
+    std::istream_iterator<float> ii(ifs);
     std::copy(ii, std::istream_iterator<float>(), std::back_inserter(vec));
     ifs.close();
     return vec;
@@ -23,8 +26,11 @@ ublas::matrix<float> load_matrix_from_file(const std::string &file_name, char li
 {
     std::vector<float> data;
     std::ifstream ifs(file_name.c_str(), std::ios_base::in);
-    std::string line;
 
+    if(!ifs.is_open())
+        return ublas::matrix<float>();
+
+    std::string line;
     std::size_t lines_count = 0;
 
     while(!ifs.eof()) {
@@ -117,8 +123,11 @@ std::vector<ublas::matrix<float>> load_matrices_from_dir(const std::string &dir_
 std::vector<float> read_mnist_labels(const std::string &file_name, unsigned max_items)
 {
     std::ifstream ifs(file_name.c_str(), std::ios_base::in | std::ios_base::binary);
-    std::uint32_t magic, nr_items;
 
+    if(!ifs.is_open())
+        return std::vector<float>();
+
+    std::uint32_t magic, nr_items;
     ifs.readsome((char *) &magic, sizeof(magic));
     magic = htobe32(magic);
     ifs.readsome((char *) &nr_items, sizeof(nr_items));
@@ -137,8 +146,11 @@ std::vector<float> read_mnist_labels(const std::string &file_name, unsigned max_
 std::vector<std::vector<float>> read_mnist_images(const std::string &file_name, unsigned max_items)
 {
     std::ifstream ifs(file_name.c_str(), std::ios_base::in | std::ios_base::binary);
-    std::uint32_t magic, nr_items, rows, columns;
 
+    if(!ifs.is_open())
+        return std::vector<std::vector<float>>();
+
+    std::uint32_t magic, nr_items, rows, columns;
     ifs.readsome((char *) &magic, sizeof(magic));
     magic = htobe32(magic);
     ifs.readsome((char *) &nr_items, sizeof(nr_items));

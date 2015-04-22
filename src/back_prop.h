@@ -50,6 +50,7 @@ public:
 
     std::size_t num_inputs() const;
     std::size_t num_outputs() const;
+    std::size_t num_layers() const;
 
     ublas::matrix<float> weights(std::size_t layer) const;
     bool set_weights(std::size_t layer, const ublas::matrix<float> &matrix);

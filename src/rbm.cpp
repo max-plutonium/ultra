@@ -2,7 +2,7 @@
 
 namespace ultra {
 
-float rbm::propup(const std::vector<int> &v, std::size_t i, float b) const
+float rbm::propup(const std::vector<float> &v, std::size_t i, float b) const
 {
     float pre_sigmoid_activation = 0.0;
 
@@ -24,9 +24,10 @@ float rbm::propdown(const std::vector<int> &h, std::size_t i, float b) const
     return sigmoid(pre_sigmoid_activation);
 }
 
-void rbm::sample_h_given_v(const std::vector<int> &v0_sample,
+void rbm::sample_h_given_v(const std::vector<float> &v0_sample,
                            std::vector<float> &mean, std::vector<int> &sample)
 {
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_hidden; i++) {
         mean[i] = propup(v0_sample, i, _hbias[i]);
         std::binomial_distribution<> distr(1, mean[i]);
@@ -35,8 +36,9 @@ void rbm::sample_h_given_v(const std::vector<int> &v0_sample,
 }
 
 void rbm::sample_v_given_h(const std::vector<int> &h0_sample,
-                           std::vector<float> &mean, std::vector<int> &sample)
+                           std::vector<float> &mean, std::vector<float> &sample)
 {
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_visible; i++) {
         mean[i] = propdown(h0_sample, i, _vbias[i]);
         std::binomial_distribution<> distr(1, mean[i]);
@@ -46,7 +48,7 @@ void rbm::sample_v_given_h(const std::vector<int> &h0_sample,
 
 void rbm::gibbs_hvh(const std::vector<int> &h0_sample,
                     std::vector<float> &nv_means,
-                    std::vector<int> &nv_samples,
+                    std::vector<float> &nv_samples,
                     std::vector<float> &nh_means,
                     std::vector<int> &nh_samples)
 {
@@ -66,13 +68,13 @@ rbm::rbm(std::size_t size, std::size_t n_v, std::size_t n_h)
             _weights(i, j) = distr(_engine);
 }
 
-void rbm::contrastive_divergence(const std::vector<int> &input,
+void rbm::contrastive_divergence(const std::vector<float> &input,
                                  float learning_rate, std::size_t sampling_iterations)
 {
     std::vector<float>  ph_mean(_nr_hidden);
     std::vector<int>    ph_sample(_nr_hidden);
     std::vector<float>  nv_means(_nr_visible);
-    std::vector<int>    nv_samples(_nr_visible);
+    std::vector<float>  nv_samples(_nr_visible);
     std::vector<float>  nh_means(_nr_hidden);
     std::vector<int>    nh_samples(_nr_hidden);
 
@@ -85,6 +87,7 @@ void rbm::contrastive_divergence(const std::vector<int> &input,
         else
             gibbs_hvh(nh_samples, nv_means, nv_samples, nh_means, nh_samples);
 
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_hidden; i++) {
         for(std::size_t j = 0; j < _nr_visible; j++)
             // _weights(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
@@ -93,18 +96,21 @@ void rbm::contrastive_divergence(const std::vector<int> &input,
         _hbias[i] += learning_rate * (ph_sample[i] - nh_means[i]) / _size;
     }
 
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_visible; i++)
         _vbias[i] += learning_rate * (input[i] - nv_samples[i]) / _size;
 }
 
-std::vector<float> rbm::reconstruct(const std::vector<int> &v) const
+std::vector<float> rbm::reconstruct(const std::vector<float> &v) const
 {
     std::vector<float> h(_nr_hidden);
-    std::vector<float> res;
+    std::vector<float> res(_nr_visible);
 
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_hidden; i++)
         h[i] = propup(v, i, _hbias[i]);
 
+#pragma omp parallel for
     for(std::size_t i = 0; i < _nr_visible; i++) {
 
         float pre_sigmoid_activation = 0.0;
@@ -113,7 +119,7 @@ std::vector<float> rbm::reconstruct(const std::vector<int> &v) const
             pre_sigmoid_activation += _weights(j, i) * h[j];
 
         pre_sigmoid_activation += _vbias[i];
-        res.push_back(sigmoid(pre_sigmoid_activation));
+        res[i] = sigmoid(pre_sigmoid_activation);
     }
 
     return res;
@@ -122,6 +128,11 @@ std::vector<float> rbm::reconstruct(const std::vector<int> &v) const
 ublas::matrix<float> rbm::weights() const
 {
     return _weights;
+}
+
+void rbm::set_weights(const ublas::matrix<float> &matrix)
+{
+    _weights = matrix;
 }
 
 } // namespace ultra

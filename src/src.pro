@@ -10,7 +10,7 @@ QT -= core gui
 TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.1.1
-QMAKE_CXXFLAGS += -std=gnu++1y
+QMAKE_CXXFLAGS += -std=gnu++1y -fopenmp
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_cds)
@@ -54,7 +54,7 @@ CONFIG(debug, debug|release) {
     }
 }
 
-LIBS += -lprotobuf
+LIBS += -lgomp -lprotobuf
 
 MSGFILES = \
     msg.proto
