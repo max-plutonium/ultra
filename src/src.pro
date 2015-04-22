@@ -10,6 +10,8 @@ QT -= core gui
 TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.1.1
+QMAKE_CXXFLAGS += -std=gnu++1y
+QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_cds)
 load(ultra_boost)
@@ -87,7 +89,9 @@ HEADERS += \
     messages.h \
     genetic.h \
     node.h \
-    rbm.h
+    rbm.h \
+    back_prop.h \
+    util.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -111,7 +115,9 @@ SOURCES += \
     genetic.cpp \
     node.cpp \
     core/locks.cpp \
-    rbm.cpp
+    rbm.cpp \
+    back_prop.cpp \
+    util.cpp
 
 ### Install settings ###
 

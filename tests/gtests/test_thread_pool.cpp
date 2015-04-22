@@ -1,4 +1,5 @@
 #include "../../src/core/thread_pool.h"
+#include "../../src/core/schedulers.h"
 #include "mock_types.h"
 #include <chrono>
 
@@ -78,6 +79,7 @@ public:
 
 using test_types = testing::Types<ultra::core::fifo_scheduler,
     ultra::core::lifo_scheduler, ultra::core::prio_scheduler>;
+
 TYPED_TEST_CASE(typed_test_thread_pool, test_types);
 
 TYPED_TEST(typed_test_thread_pool, schedule_function_nosleep)

@@ -62,4 +62,5 @@ SOURCES += \
     test_port.cpp \
     test_execution_service.cpp \
     test_network_session.cpp \
-    test_rbm.cpp
+    test_rbm.cpp \
+    test_back_prop.cpp

@@ -25,7 +25,7 @@ void network_session::start()
 
                     boost::asio::streambuf buf;
 
-                    std::size_t n = boost::asio::async_read_until(*_socket, buf, '\n', yield);
+                    /*std::size_t n =*/ boost::asio::async_read_until(*_socket, buf, '\n', yield);
                     std::istream in(&buf);
                     request req;
                     in >> req;

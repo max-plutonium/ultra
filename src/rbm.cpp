@@ -67,7 +67,7 @@ rbm::rbm(std::size_t size, std::size_t n_v, std::size_t n_h)
 }
 
 void rbm::contrastive_divergence(const std::vector<int> &input,
-                                 float lr, std::size_t sampling_iterations)
+                                 float learning_rate, std::size_t sampling_iterations)
 {
     std::vector<float>  ph_mean(_nr_hidden);
     std::vector<int>    ph_sample(_nr_hidden);
@@ -79,7 +79,7 @@ void rbm::contrastive_divergence(const std::vector<int> &input,
     /* CD-k */
     sample_h_given_v(input, ph_mean, ph_sample);
 
-    for(int step = 0; step < sampling_iterations; step++)
+    for(std::size_t step = 0; step < sampling_iterations; step++)
         if(step == 0)
             gibbs_hvh(ph_sample, nv_means, nv_samples, nh_means, nh_samples);
         else
@@ -88,13 +88,13 @@ void rbm::contrastive_divergence(const std::vector<int> &input,
     for(std::size_t i = 0; i < _nr_hidden; i++) {
         for(std::size_t j = 0; j < _nr_visible; j++)
             // _weights(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
-            _weights(i, j) += lr * (ph_mean[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
+            _weights(i, j) += learning_rate * (ph_mean[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
 
-        _hbias[i] += lr * (ph_sample[i] - nh_means[i]) / _size;
+        _hbias[i] += learning_rate * (ph_sample[i] - nh_means[i]) / _size;
     }
 
     for(std::size_t i = 0; i < _nr_visible; i++)
-        _vbias[i] += lr * (input[i] - nv_samples[i]) / _size;
+        _vbias[i] += learning_rate * (input[i] - nv_samples[i]) / _size;
 }
 
 std::vector<float> rbm::reconstruct(const std::vector<int> &v) const
@@ -102,13 +102,12 @@ std::vector<float> rbm::reconstruct(const std::vector<int> &v) const
     std::vector<float> h(_nr_hidden);
     std::vector<float> res;
 
-    float pre_sigmoid_activation = 0.0;
-
     for(std::size_t i = 0; i < _nr_hidden; i++)
         h[i] = propup(v, i, _hbias[i]);
 
     for(std::size_t i = 0; i < _nr_visible; i++) {
-        pre_sigmoid_activation = 0.0;
+
+        float pre_sigmoid_activation = 0.0;
 
         for(std::size_t j = 0; j < _nr_hidden; j++)
             pre_sigmoid_activation += _weights(j, i) * h[j];

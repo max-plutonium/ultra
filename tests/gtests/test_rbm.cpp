@@ -5,19 +5,19 @@
 
 using namespace ultra;
 
-TEST(test_rbm, create)
+TEST(test_rbm, test)
 {
     auto train_vectors = load_data_from_dir<int>("train");
     auto test_vectors = load_data_from_dir<int>("data");
 
     const float learning_rate = 0.1;
-    const std::size_t training_epochs = 1000;
+    const std::size_t training_epochs = 5000;
     const std::size_t sampling_iterations = 2;
 
     const std::size_t train_N = train_vectors.size();
     const std::size_t test_N = test_vectors.size();
     const std::size_t n_visible = train_vectors.front().size();
-    const std::size_t n_hidden = 3;
+    const std::size_t n_hidden = 7;
 
     // construct RBM
     rbm machine(train_N, n_visible, n_hidden);

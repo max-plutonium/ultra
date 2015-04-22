@@ -37,10 +37,10 @@ TEST_F(test_network_session, ping_pong)
     std::string data = req.SerializeAsString();
     data.push_back('\n');
 
-    std::size_t n = _socket->write_some(boost::asio::buffer(data), ec);
+    /*std::size_t n =*/ _socket->write_some(boost::asio::buffer(data), ec);
     ASSERT_FALSE(ec);
 
-    n = boost::asio::read_until(*_socket, _buf, '\n');
+    /*n =*/ boost::asio::read_until(*_socket, _buf, '\n');
     ASSERT_FALSE(ec);
 
     std::istream in(&_buf);
@@ -73,10 +73,10 @@ TEST_F(test_network_session, input_data)
     data = req.SerializeAsString();
     data.push_back('\n');
 
-    std::size_t n = _socket->write_some(boost::asio::buffer(data), ec);
+    /*std::size_t n =*/ _socket->write_some(boost::asio::buffer(data), ec);
     ASSERT_FALSE(ec);
 
-    n = boost::asio::read_until(*_socket, _buf, '\n');
+    /*n =*/ boost::asio::read_until(*_socket, _buf, '\n');
     ASSERT_FALSE(ec);
 
     std::istream in(&_buf);

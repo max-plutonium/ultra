@@ -4,7 +4,7 @@
 #include <list>
 #include <unordered_set>
 
-#include "schedulers.h"
+#include "../ultra.h"
 
 namespace ultra { namespace core {
 

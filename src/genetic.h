@@ -49,7 +49,7 @@ protected:
 
     // Скрещивание
     void crossing(crossing_type cross_type,
-            const std::deque<std::pair<std::size_t, std::size_t>> &pairs);
+        const std::deque<std::pair<std::size_t, std::size_t>> &pairs);
 
     // Мутация
     void mutate(float mutation_percent);
