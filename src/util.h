@@ -2,11 +2,6 @@
 #define UTIL_H
 
 #include <cmath>
-#include <fstream>
-#include <iterator>
-
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -19,117 +14,21 @@ constexpr Tp sigmoid(Tp value, float beta = 1.0f) {
     return 1.0 / (1.0 + std::exp(-beta * value));
 }
 
-template <typename Tp>
-std::vector<Tp> load_data_from_file(const std::string &file_name)
-{
-    std::vector<Tp> vec;
-    std::ifstream ifs(file_name.c_str(), std::ios_base::in);
-    std::istream_iterator<Tp> ii(ifs);
+std::vector<float> load_data_from_file(const std::string &file_name);
 
-    std::copy(ii, std::istream_iterator<Tp>(), std::back_inserter(vec));
-    std::cout << file_name << std::endl;
-    ifs.close();
-    return vec;
-}
+ublas::matrix<float> load_matrix_from_file(const std::string &file_name, char line_delim = '\n');
 
-template <typename Tp>
-ublas::matrix<Tp> load_matrix_from_file(const std::string &file_name, char line_delim = '\n')
-{
-    std::vector<Tp> data;
-    std::ifstream ifs(file_name.c_str(), std::ios_base::in);
-    std::string line;
+void store_data_to_file(const std::string &file_name, const std::vector<float> &data,
+                        const char *delim = " ");
 
-    std::size_t lines_count = 0;
-    while(!ifs.eof()) {
-        std::getline(ifs, line, line_delim);
-        if(line.empty()) break;
-        ++lines_count;
-        std::istringstream iss(line);
-        std::istream_iterator<Tp> ii(iss);
-        std::copy(ii, std::istream_iterator<Tp>(), std::back_inserter(data));
-    }
-    ifs.close();
+void store_matrix_to_file(const std::string &file_name, const ublas::matrix<float> &data,
+                          const char *unit_delim = " ", const char *line_delim = "\n");
 
-    const auto line_size = data.size() / lines_count;
-    ublas::matrix<Tp> res(lines_count, line_size);
+std::vector<std::vector<float>> load_data_from_dir(
+        const std::string &dir_name = ".", const char *ext = ".txt");
 
-    for(std::size_t i = 0; i < lines_count; ++i)
-        for(std::size_t j = 0; j < line_size; ++j)
-            res(i, j) = data[i * line_size + j];
-
-    return res;
-}
-
-template <typename Tp>
-void store_data_to_file(const std::string &file_name, const std::vector<Tp> &data, const char *delim = " ")
-{
-    std::ofstream ofs(file_name.c_str(), std::ios_base::out);
-    std::copy(data.cbegin(), data.cend(), std::ostream_iterator<Tp>(ofs, delim));
-    ofs.close();
-}
-
-template <typename Tp>
-void store_matrix_to_file(const std::string &file_name, const ublas::matrix<Tp> &data,
-                          const char *unit_delim = " ", const char *line_delim = "\n")
-{
-    std::ofstream ofs(file_name.c_str(), std::ios_base::out);
-    std::ostream_iterator<Tp> unit_iter(ofs, unit_delim);
-
-    const auto data_size1 = data.size1();
-    const auto data_size2 = data.size2();
-
-    for(std::size_t i = 0; i < data_size1; ++i) {
-        for(std::size_t j = 0; j < data_size2; ++j)
-            unit_iter = data(i, j);
-        ofs << line_delim;
-    }
-
-    ofs.close();
-}
-
-template <typename Tp>
-std::vector<std::vector<Tp>> load_data_from_dir(const std::string &dir_name = ".",
-                                                const char *ext = ".txt")
-{
-    namespace bfs = boost::filesystem;
-
-    std::vector<bfs::directory_entry> files;
-    bfs::directory_iterator rdib(dir_name), rdie;
-
-    std::copy_if(rdib, rdie, std::back_inserter(files),
-        [ext](const bfs::directory_entry &entry) {
-            return entry.path().extension() == ext;
-        });
-
-    std::vector<std::vector<Tp>> res;
-    std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
-        res.push_back(load_data_from_file<Tp>(file.path().string()));
-    });
-
-    return res;
-}
-
-template <typename Tp>
-std::vector<ublas::matrix<Tp>> load_matrices_from_dir(
-        const std::string &dir_name = ".", const char *ext = ".txt")
-{
-    namespace bfs = boost::filesystem;
-
-    std::vector<bfs::directory_entry> files;
-    bfs::directory_iterator rdib(dir_name), rdie;
-
-    std::copy_if(rdib, rdie, std::back_inserter(files),
-        [ext](const bfs::directory_entry &entry) {
-            return entry.path().extension() == ext;
-        });
-
-    std::vector<ublas::matrix<Tp>> res;
-    std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
-        res.push_back(load_matrix_from_file<Tp>(file.path().string()));
-    });
-
-    return res;
-}
+std::vector<ublas::matrix<float>> load_matrices_from_dir(
+        const std::string &dir_name = ".", const char *ext = ".txt");
 
 std::vector<float> read_mnist_labels(const std::string &file_name, unsigned max_items = -1);
 
