@@ -92,10 +92,12 @@ std::vector<std::vector<float>> load_data_from_dir(const std::string &dir_name, 
             return entry.path().extension() == ext;
         });
 
-    std::vector<std::vector<float>> res;
-    std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
-        res.push_back(load_data_from_file(file.path().string()));
-    });
+    std::vector<std::vector<float>> res(files.size());
+
+    std::transform(files.cbegin(), files.cend(), res.begin(),
+        [](const bfs::directory_entry &file) {
+            return load_data_from_file(file.path().string());
+        });
 
     return res;
 }
@@ -112,10 +114,12 @@ std::vector<ublas::matrix<float>> load_matrices_from_dir(const std::string &dir_
             return entry.path().extension() == ext;
         });
 
-    std::vector<ublas::matrix<float>> res;
-    std::for_each(files.cbegin(), files.cend(), [&res](const bfs::directory_entry &file) {
-        res.push_back(load_matrix_from_file(file.path().string()));
-    });
+    std::vector<ublas::matrix<float>> res(files.size());
+
+    std::transform(files.cbegin(), files.cend(), res.begin(),
+        [](const bfs::directory_entry &file) {
+            return load_matrix_from_file(file.path().string());
+        });
 
     return res;
 }
