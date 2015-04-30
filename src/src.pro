@@ -6,11 +6,11 @@
 
 
 TEMPLATE = lib
-QT -= core gui
+QT =
 TARGET = ultra
 DEFINES += ULTRA_SHARED
 VERSION = 0.1.1
-QMAKE_CXXFLAGS += -std=gnu++1y -fopenmp
+QMAKE_CXXFLAGS += -std=gnu++14 -fopenmp
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_cds)
@@ -91,7 +91,8 @@ HEADERS += \
     node.h \
     rbm.h \
     back_prop.h \
-    util.h
+    util.h \
+    stacked_rbm.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -117,7 +118,8 @@ SOURCES += \
     core/locks.cpp \
     rbm.cpp \
     back_prop.cpp \
-    util.cpp
+    util.cpp \
+    stacked_rbm.cpp
 
 ### Install settings ###
 

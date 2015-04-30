@@ -10,7 +10,7 @@ QT =
 TARGET = ultra-gtests
 CONFIG += console
 CONFIG -= app_bundle
-QMAKE_CXXFLAGS += -std=gnu++1y
+QMAKE_CXXFLAGS += -std=gnu++14
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_boost)
@@ -63,4 +63,5 @@ SOURCES += \
     test_execution_service.cpp \
     test_network_session.cpp \
     test_rbm.cpp \
-    test_back_prop.cpp
+    test_back_prop.cpp \
+    test_stacked_rbm.cpp
