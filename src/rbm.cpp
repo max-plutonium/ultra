@@ -56,20 +56,8 @@ void rbm::gibbs_hvh(const std::vector<int> &h0_sample,
     sample_h_given_v(nv_samples, nh_means, nh_samples);
 }
 
-rbm::rbm(std::size_t size, std::size_t n_v, std::size_t n_h)
-    : _size(size), _nr_visible(n_v), _nr_hidden(n_h), _weights(_nr_hidden, _nr_visible)
-    , _hbias(_nr_hidden, 0), _vbias(_nr_visible, 0)
-{
-    const float a = 1.0f / _nr_visible;
-    std::uniform_real_distribution<float> distr(-a, a);
-
-    for(std::size_t i = 0; i < _nr_hidden; i++)
-        for(std::size_t j = 0; j < _nr_visible; j++)
-            _weights(i, j) = distr(_engine);
-}
-
-void rbm::contrastive_divergence(const std::vector<float> &input,
-                                 float learning_rate, std::size_t sampling_iterations)
+void rbm::contrastive_divergence(const std::vector<float> &input, float learning_rate,
+                                 std::size_t sampling_iterations, std::size_t train_size)
 {
     std::vector<float>  ph_mean(_nr_hidden);
     std::vector<int>    ph_sample(_nr_hidden);
@@ -90,25 +78,48 @@ void rbm::contrastive_divergence(const std::vector<float> &input,
 #pragma omp parallel for
     for(std::size_t i = 0; i < _nr_hidden; i++) {
         for(std::size_t j = 0; j < _nr_visible; j++)
-            // _weights(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
-            _weights(i, j) += learning_rate * (ph_mean[i] * input[j] - nh_means[i] * nv_samples[j]) / _size;
+            // _weights(i, j) += lr * (ph_sample[i] * input[j] - nh_means[i] * nv_samples[j]) / train_size;
+            _weights(i, j) += learning_rate * (ph_mean[i] * input[j] - nh_means[i] * nv_samples[j]) / train_size;
 
-        _hbias[i] += learning_rate * (ph_sample[i] - nh_means[i]) / _size;
+        _hbias[i] += learning_rate * (ph_sample[i] - nh_means[i]) / train_size;
     }
 
 #pragma omp parallel for
     for(std::size_t i = 0; i < _nr_visible; i++)
-        _vbias[i] += learning_rate * (input[i] - nv_samples[i]) / _size;
+        _vbias[i] += learning_rate * (input[i] - nv_samples[i]) / train_size;
 }
 
-std::vector<float> rbm::reconstruct(const std::vector<float> &v) const
+rbm::rbm(std::size_t visible_size, std::size_t hidden_size)
+    : _nr_visible(visible_size), _nr_hidden(hidden_size)
+    , _weights(_nr_hidden, _nr_visible), _hbias(_nr_hidden, 0), _vbias(_nr_visible, 0)
+{
+    const float a = 1.0f / _nr_visible;
+    std::uniform_real_distribution<float> distr(-a, a);
+
+    for(std::size_t i = 0; i < _nr_hidden; i++)
+        for(std::size_t j = 0; j < _nr_visible; j++)
+            _weights(i, j) = distr(_engine);
+}
+
+void rbm::train(const std::vector<std::vector<float>> &train_vectors, std::size_t training_epochs,
+                float learning_rate, std::size_t sampling_iterations)
+{
+    const std::size_t train_vectors_size = train_vectors.size();
+
+    for(std::size_t epoch = 0; epoch < training_epochs; epoch++)
+        for(std::size_t i = 0; i < train_vectors_size; i++)
+            contrastive_divergence(train_vectors[i], learning_rate,
+                                   sampling_iterations, train_vectors_size);
+}
+
+std::vector<float> rbm::reconstruct(const std::vector<float> &input) const
 {
     std::vector<float> h(_nr_hidden);
     std::vector<float> res(_nr_visible);
 
 #pragma omp parallel for
     for(std::size_t i = 0; i < _nr_hidden; i++)
-        h[i] = propup(v, i, _hbias[i]);
+        h[i] = propup(input, i, _hbias[i]);
 
 #pragma omp parallel for
     for(std::size_t i = 0; i < _nr_visible; i++) {
@@ -123,6 +134,17 @@ std::vector<float> rbm::reconstruct(const std::vector<float> &v) const
     }
 
     return res;
+}
+
+std::vector<float> rbm::compute_hiddens(const std::vector<float> &input) const
+{
+    std::vector<float> h(_nr_hidden);
+
+#pragma omp parallel for
+    for(std::size_t i = 0; i < _nr_hidden; i++)
+        h[i] = propup(input, i, _hbias[i]);
+
+    return h;
 }
 
 ublas::matrix<float> rbm::weights() const

@@ -7,7 +7,7 @@ namespace ultra {
 
 class rbm
 {
-    const std::size_t _size, _nr_visible, _nr_hidden;
+    const std::size_t _nr_visible, _nr_hidden;
     ublas::matrix<float> _weights;
     std::vector<float> _hbias, _vbias;
     std::mt19937 _engine;
@@ -29,13 +29,17 @@ class rbm
                    std::vector<float> &nh_means,
                    std::vector<int> &nh_samples);
 
+    void contrastive_divergence(const std::vector<float> &input, float learning_rate,
+                                std::size_t sampling_iterations, std::size_t train_size);
+
 public:
-    rbm(std::size_t size, std::size_t n_v, std::size_t n_h);
+    rbm(std::size_t visible_size, std::size_t hidden_size);
 
-    void contrastive_divergence(const std::vector<float> &input,
-                                float learning_rate, std::size_t sampling_iterations);
+    void train(const std::vector<std::vector<float>> &train_vectors, std::size_t training_epochs,
+               float learning_rate, std::size_t sampling_iterations);
 
-    std::vector<float> reconstruct(const std::vector<float> &v) const;
+    std::vector<float> reconstruct(const std::vector<float> &input) const;
+    std::vector<float> compute_hiddens(const std::vector<float> &input) const;
 
     ublas::matrix<float> weights() const;
     void set_weights(const ublas::matrix<float> &matrix);
