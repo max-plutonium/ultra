@@ -135,7 +135,7 @@ vm::vm(int argc, const char **argv)
 
     cds::Initialize();
 
-    d = new impl(cluster, num_threads, num_network_threads, num_ios, addr, port);
+    //d = new impl(cluster, num_threads, num_network_threads, num_ios, addr, port);
 }
 
 vm::~vm()
