@@ -18,8 +18,8 @@ namespace ultra {
 //  hence there is no delta or weight
 //  values associated to it.
 
-back_prop::back_prop(const std::vector<std::size_t> &layers, float beta, float alpha)
-    : _layers(layers.size()), _learning_rate(beta), _alpha(alpha)
+back_prop::back_prop(const std::vector<std::size_t> &layers)
+    : _layers(layers.size())
 {
     std::uniform_real_distribution<float> distr(-1, 1);
     std::mt19937 engine;
@@ -70,7 +70,8 @@ void back_prop::fprop(const std::vector<float> &input)
     }
 }
 
-void back_prop::bprop(const std::vector<float> &input, const std::vector<float> &target)
+void back_prop::bprop(const std::vector<float> &input, const std::vector<float> &target,
+                      float learning_rate, float alpha)
 {
     fprop(input);
 
@@ -109,10 +110,10 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
         for(std::size_t j = 0; j < cur_layer._nr_neurons; j++)
         {
             for(std::size_t k = 0; k < prev_layer._nr_neurons; k++)
-                cur_layer._weights[j][k] += _alpha * cur_layer._prev_dwt[j][k];
+                cur_layer._weights[j][k] += alpha * cur_layer._prev_dwt[j][k];
 
             cur_layer._weights[j][prev_layer._nr_neurons] +=
-                    _alpha * cur_layer._prev_dwt[j][prev_layer._nr_neurons];
+                    alpha * cur_layer._prev_dwt[j][prev_layer._nr_neurons];
         }
     }
 
@@ -126,13 +127,13 @@ void back_prop::bprop(const std::vector<float> &input, const std::vector<float> 
         for(std::size_t j = 0; j < cur_layer._nr_neurons; j++)
         {
             for(std::size_t k = 0; k < prev_layer._nr_neurons; k++) {
-                cur_layer._prev_dwt[j][k] = _learning_rate
+                cur_layer._prev_dwt[j][k] = learning_rate
                     * cur_layer._deltas[j] * prev_layer._outputs[k];
                 cur_layer._weights[j][k] += cur_layer._prev_dwt[j][k];
             }
 
             cur_layer._prev_dwt[j][prev_layer._nr_neurons] =
-                    _learning_rate * cur_layer._deltas[j];
+                    learning_rate * cur_layer._deltas[j];
             cur_layer._weights[j][prev_layer._nr_neurons]
                     += cur_layer._prev_dwt[j][prev_layer._nr_neurons];
         }
@@ -149,6 +150,23 @@ float back_prop::mse(const std::vector<float> &target)
         mse += std::pow(target[i] - last_layer._outputs[i], 2);
 
     return mse / 2;
+}
+
+void back_prop::train(const std::vector<std::vector<float>> &train_vectors,
+                      const std::vector<std::vector<float>> &train_labels,
+                      std::size_t num_iter, float learning_rate, float alpha, float threshold)
+{
+    const std::size_t train_vectors_size = train_vectors.size();
+    const std::size_t train_labels_size = train_labels.size();
+
+    for(std::size_t i = 0; i < num_iter; ++i) {
+        bprop(train_vectors[i % train_vectors_size],
+               train_labels[i % train_labels_size],
+                learning_rate, alpha);
+
+        if(mse(train_labels[i % train_labels_size]) < threshold)
+            break;
+    }
 }
 
 float back_prop::out(std::size_t i) const

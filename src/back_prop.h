@@ -26,24 +26,23 @@ class back_prop
 
     std::vector<layer> _layers;
 
-    // learning rate
-    const float _learning_rate;
-
-    // momentum
-    const float _alpha;
-
 public:
     // initializes and allocates memory
-    back_prop(const std::vector<std::size_t> &layers, float _learning_rate, float _alpha);
+    explicit back_prop(const std::vector<std::size_t> &layers);
 
     // feed forwards activations for one set of inputs
     void fprop(const std::vector<float> &input);
 
     // backpropogates error for one set of input
-    void bprop(const std::vector<float> &input, const std::vector<float> &target);
+    void bprop(const std::vector<float> &input, const std::vector<float> &target,
+               float learning_rate, float alpha);
 
     // returns mean square error of the net
     float mse(const std::vector<float> &target);
+
+    void train(const std::vector<std::vector<float>> &train_vectors,
+               const std::vector<std::vector<float>> &train_labels, std::size_t num_iter,
+               float learning_rate, float alpha, float threshold);
 
     // returns i'th output of the net
     float out(std::size_t i) const;
