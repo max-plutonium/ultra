@@ -106,8 +106,8 @@ void rbm::train(const std::vector<std::vector<float>> &train_vectors, std::size_
 {
     const std::size_t train_vectors_size = train_vectors.size();
 
-    for(std::size_t epoch = 0; epoch < training_epochs; epoch++)
-        for(std::size_t i = 0; i < train_vectors_size; i++)
+    for(std::size_t epoch = 0; epoch < training_epochs; ++epoch)
+        for(std::size_t i = 0; i < train_vectors_size; ++i)
             contrastive_divergence(train_vectors[i], learning_rate,
                                    sampling_iterations, train_vectors_size);
 }
