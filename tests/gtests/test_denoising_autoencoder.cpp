@@ -5,8 +5,8 @@ using namespace ultra;
 
 TEST(test_denoising_autoencoder, test)
 {
-//    auto train_labels = std::vector<float> {0, 1, 2, 3, 4, 5, 6};
     auto train_vectors = load_data_from_dir("../data/train");
+    auto test_labels = std::vector<float> {4};
     auto test_vectors = load_data_from_dir("../data/test");
 
     const std::size_t training_epochs = 1000;
@@ -23,6 +23,8 @@ TEST(test_denoising_autoencoder, test)
     for(std::size_t i = 0; i < test_vectors.size(); i++)
     {
         auto reconstructed = encoder.reconstruct(test_vectors[i]);
+
+        std::cout << std::endl << test_labels[i] << std::endl;
 
         for(std::size_t line = 0; line < 10; line++)
         {

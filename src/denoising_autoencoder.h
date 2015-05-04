@@ -25,6 +25,10 @@ public:
                std::size_t training_epochs, float learning_rate, float corruption_level);
 
     std::vector<float> reconstruct(const std::vector<float> &input) const;
+    std::vector<float> compute_hiddens(const std::vector<float> &input) const;
+
+    ublas::matrix<float> weights() const;
+    void set_weights(const ublas::matrix<float> &matrix);
 };
 
 } // namespace ultra

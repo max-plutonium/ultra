@@ -5,7 +5,6 @@ using namespace ultra;
 
 TEST(test_rbm, test)
 {
-//    auto train_labels = std::vector<float> {0, 1, 2, 3, 4, 5, 6};
     auto train_vectors = load_data_from_dir("../data/train");
     auto test_labels = std::vector<float> {4};
     auto test_vectors = load_data_from_dir("../data/test");

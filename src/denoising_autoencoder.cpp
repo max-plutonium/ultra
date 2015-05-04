@@ -112,4 +112,19 @@ std::vector<float> denoising_autoencoder::reconstruct(const std::vector<float> &
     return get_reconstructed_input(y);
 }
 
+std::vector<float> denoising_autoencoder::compute_hiddens(const std::vector<float> &input) const
+{
+    return get_hidden_values(input);
+}
+
+ublas::matrix<float> denoising_autoencoder::weights() const
+{
+    return _weights;
+}
+
+void denoising_autoencoder::set_weights(const ublas::matrix<float> &matrix)
+{
+    _weights = matrix;
+}
+
 } // namespace ultra
