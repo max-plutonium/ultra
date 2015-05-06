@@ -65,4 +65,5 @@ SOURCES += \
     test_rbm.cpp \
     test_back_prop.cpp \
     test_stacked_rbm.cpp \
-    test_denoising_autoencoder.cpp
+    test_denoising_autoencoder.cpp \
+    test_stacked_denoising_autoencoder.cpp

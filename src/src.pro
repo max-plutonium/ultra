@@ -93,7 +93,8 @@ HEADERS += \
     back_prop.h \
     util.h \
     stacked_rbm.h \
-    denoising_autoencoder.h
+    denoising_autoencoder.h \
+    stacked_denoising_autoencoder.h
 
 PRIVATE_HEADERS = $$files(*_p.h)
 PUBLIC_HEADERS = $$HEADERS
@@ -121,7 +122,8 @@ SOURCES += \
     back_prop.cpp \
     util.cpp \
     stacked_rbm.cpp \
-    denoising_autoencoder.cpp
+    denoising_autoencoder.cpp \
+    stacked_denoising_autoencoder.cpp
 
 ### Install settings ###
 
