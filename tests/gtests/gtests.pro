@@ -10,7 +10,7 @@ QT =
 TARGET = ultra-gtests
 CONFIG += console
 CONFIG -= app_bundle
-QMAKE_CXXFLAGS += -std=gnu++14
+QMAKE_CXXFLAGS += -std=gnu++14 -fopenmp
 QMAKE_CXXFLAGS_RELEASE += -Ofast
 
 load(ultra_boost)
@@ -36,8 +36,7 @@ CONFIG(debug, debug|release) {
     else: win32: LIBS += -lultra0
 }
 
-LIBS += -lprotobuf
-
+LIBS += -lgccjit
 
 DESTDIR = $$BUILDROOT
 MOC_DIR = $$BUILDROOT/$$BUILDSUFFIX/tests/gtests
@@ -66,4 +65,5 @@ SOURCES += \
     test_back_prop.cpp \
     test_stacked_rbm.cpp \
     test_denoising_autoencoder.cpp \
-    test_stacked_denoising_autoencoder.cpp
+    test_stacked_denoising_autoencoder.cpp \
+    test_gccjit.cpp

@@ -1,7 +1,0 @@
-
-
-LIBJIT_PATH = $$absolute_path($$PWD)/../libjit
-INCLUDEPATH += $$LIBJIT_PATH/include
-
-unix: LIBS += -L/usr/local/lib64 -ljit
-else: win32: LIBS += -ljit

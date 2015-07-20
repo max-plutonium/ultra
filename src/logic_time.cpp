@@ -1,5 +1,4 @@
 #include "logic_time.h"
-#include "msg.pb.h"
 
 namespace ultra {
 
@@ -72,9 +71,9 @@ bool scalar_time::operator<(const scalar_time &o) const
  */
 std::ostream &operator<<(std::ostream &o, const ultra::scalar_time &msg)
 {
-    internal::scalar_time int_time;
-    int_time.set_counter(msg._time);
-    int_time.SerializeToOstream(&o);
+//    internal::scalar_time int_time;
+//    int_time.set_counter(msg._time);
+//    int_time.SerializeToOstream(&o);
     return o;
 }
 
@@ -83,9 +82,9 @@ std::ostream &operator<<(std::ostream &o, const ultra::scalar_time &msg)
  */
 std::istream &operator>>(std::istream &i, ultra::scalar_time &msg)
 {
-    internal::scalar_time int_time;
-    int_time.ParseFromIstream(&i);
-    msg._time = int_time.counter();
+//    internal::scalar_time int_time;
+//    int_time.ParseFromIstream(&i);
+//    msg._time = int_time.counter();
     return i;
 }
 
@@ -166,12 +165,12 @@ bool vector_time::operator<(const vector_time &o) const
  */
 std::ostream &operator<<(std::ostream &o, const vector_time &msg)
 {
-    internal::vector_time int_time;
-    int_time.set_index(msg._idx);
-    auto vec = int_time.mutable_vector();
-    vec->Resize(msg._time.size(), 0);
-    std::copy(msg._time.cbegin(), msg._time.cend(), vec->begin());
-    int_time.SerializeToOstream(&o);
+//    internal::vector_time int_time;
+//    int_time.set_index(msg._idx);
+//    auto vec = int_time.mutable_vector();
+//    vec->Resize(msg._time.size(), 0);
+//    std::copy(msg._time.cbegin(), msg._time.cend(), vec->begin());
+//    int_time.SerializeToOstream(&o);
     return o;
 }
 
@@ -180,12 +179,12 @@ std::ostream &operator<<(std::ostream &o, const vector_time &msg)
  */
 std::istream &operator>>(std::istream &i, vector_time &msg)
 {
-    internal::vector_time int_time;
-    int_time.ParseFromIstream(&i);
-    msg._idx = int_time.index();
-    auto vec = int_time.vector();
-    msg._time.resize(int_time.vector_size());
-    std::copy(vec.cbegin(), vec.cend(), msg._time.begin());
+//    internal::vector_time int_time;
+//    int_time.ParseFromIstream(&i);
+//    msg._idx = int_time.index();
+//    auto vec = int_time.vector();
+//    msg._time.resize(int_time.vector_size());
+//    std::copy(vec.cbegin(), vec.cend(), msg._time.begin());
     return i;
 }
 
