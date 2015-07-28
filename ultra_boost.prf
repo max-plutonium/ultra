@@ -1,6 +1,6 @@
 
 
-BOOST_PATH = $$absolute_path($$PWD)/../boost_1_57_0
+BOOST_PATH = $$absolute_path($$PWD)/../boost_1_58_0
 BOOST_LIB_PATH = $$BOOST_PATH/stage/lib
 INCLUDEPATH += $$BOOST_PATH
 

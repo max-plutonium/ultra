@@ -9,9 +9,9 @@ TEMPLATE = lib
 QT =
 TARGET = ultra
 DEFINES += ULTRA_SHARED
-VERSION = 0.1.1
-QMAKE_CXXFLAGS += -std=gnu++14 -fopenmp
-QMAKE_CXXFLAGS_RELEASE += -Ofast
+VERSION = 0.1.2
+QMAKE_CXXFLAGS += -std=gnu++14
+QMAKE_CXXFLAGS_RELEASE += -Ofast -fno-omit-frame-pointer #-fvisibility=hidden -fvisibility-inlines-hidden
 
 load(ultra_cds)
 load(ultra_boost)
@@ -34,37 +34,10 @@ CONFIG(debug, debug|release) {
     MOC_DIR = ../bin/release
     OBJECTS_DIR = ../bin/release
 
-    *g++*: QMAKE_POST_LINK += \
+    QMAKE_POST_LINK += \
         $$QMAKE_OBJCOPY --strip-unneeded \
             $$DESTDIR/$(TARGET) $$escape_expand(\\n\\t)
 }
-
-
-### Compiler settings ###
-
-*g++*|*clang {
-    QMAKE_CXXFLAGS += \
-        -std=c++1y -pthread -funwind-tables \
-        -Wno-write-strings -Wno-unused-local-typedefs \
-        -Wunreachable-code -Woverloaded-virtual
-    QMAKE_CXXFLAGS_RELEASE += -fno-omit-frame-pointer #-fvisibility=hidden -fvisibility-inlines-hidden
-    win32 {
-        LIBS += -lpthread
-        DEFINES += _GLIBCXX_HAS_GTHREADS
-    }
-}
-
-LIBS += -lgomp -lprotobuf
-
-MSGFILES = \
-    msg.proto
-
-protoc.name = protoc
-protoc.input = MSGFILES
-protoc.output = ${QMAKE_FILE_BASE}.pb.cc
-protoc.commands = protoc --cpp_out=. ${QMAKE_FILE_IN}
-protoc.variable_out = SOURCES
-QMAKE_EXTRA_COMPILERS += protoc
 
 
 ### Files ###

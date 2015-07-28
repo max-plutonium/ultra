@@ -1,7 +1,6 @@
 #include <boost/functional/hash.hpp>
 
 #include "address.h"
-#include "msg.pb.h"
 
 namespace ultra {
 
@@ -128,12 +127,12 @@ std::size_t address_hash::operator()(const address &c) const
  */
 std::ostream &operator<<(std::ostream &o, const address &a)
 {
-    internal::address int_address;
-    int_address.set_cluster(a.cluster());
-    int_address.set_space(a.space());
-    int_address.set_field(a.field());
-    int_address.set_node(a.node());
-    int_address.SerializeToOstream(&o);
+//    internal::address int_address;
+//    int_address.set_cluster(a.cluster());
+//    int_address.set_space(a.space());
+//    int_address.set_field(a.field());
+//    int_address.set_node(a.node());
+//    int_address.SerializeToOstream(&o);
     return o;
 }
 
@@ -142,12 +141,12 @@ std::ostream &operator<<(std::ostream &o, const address &a)
  */
 std::istream &operator>>(std::istream &i, address &a)
 {
-    internal::address int_address;
-    int_address.ParseFromIstream(&i);
-    a._cluster = int_address.cluster();
-    a._space = int_address.space();
-    a._field = int_address.field();
-    a._node = int_address.node();
+//    internal::address int_address;
+//    int_address.ParseFromIstream(&i);
+//    a._cluster = int_address.cluster();
+//    a._space = int_address.space();
+//    a._field = int_address.field();
+//    a._node = int_address.node();
     return i;
 }
 
