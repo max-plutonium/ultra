@@ -28,7 +28,6 @@ class thread_pool : public execution_service
     sched_ptr  _sched;
     std::atomic_bool _shutdown;
 
-public:
     struct worker
     {
         sched_ptr _sched;
@@ -42,7 +41,6 @@ public:
         virtual void run() = 0;
     };
 
-private:
     using worker_ptr = std::shared_ptr<worker>;
     using worker_list = std::list<worker_ptr>;
     using worker_id = worker_list::iterator;
@@ -58,7 +56,6 @@ private:
     mutable std::mutex _lock;
     std::condition_variable _no_active_threads;
 
-private:
     void _start_thread(task_ptr);
     std::size_t _active_thread_count() const;
     bool _too_many_active_threads() const;
@@ -68,10 +65,6 @@ private:
     void _reset();
 
 public:
-    virtual void execute(std::shared_ptr<task>) final override;
-    virtual void execute_with_delay(std::shared_ptr<task>,
-        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) final override;
-
     explicit thread_pool(schedule_type st, std::size_t max_threads = -1);
     explicit thread_pool(sched_ptr s, std::size_t max_threads = -1);
     ~thread_pool();
@@ -94,6 +87,11 @@ public:
     void release_thread();
     bool wait_for_done(int msecs = -1);
     void clear();
+
+    virtual void execute(std::shared_ptr<task>) final override;
+    virtual void execute_with_delay(std::shared_ptr<task>,
+        std::size_t delay_msecs = 0, std::size_t period_msecs = 0) final override;
+
     virtual void shutdown() override;
     virtual bool stopped() const override;
     virtual bool try_executing_one() override;

@@ -17,7 +17,7 @@ class thread_worker : public thread_pool::worker
         , public std::enable_shared_from_this<thread_worker>
 {
     task_ptr _task;
-    std::shared_ptr<std::thread> _thread;
+    std::unique_ptr<std::thread> _thread;
 
 public:
     explicit thread_worker(std::shared_ptr<scheduler> s,
@@ -34,7 +34,7 @@ public:
         _task = std::move(t);
         if(_thread && _thread->joinable())
             _thread->join();
-        _thread = std::make_shared<std::thread>(&worker::run, this);
+        _thread = std::make_unique<std::thread>(&worker::run, this);
     }
 
     void join() override {
@@ -50,7 +50,7 @@ public:
 
     void run() override
     {
-        cds::gc::HP::thread_gc threadGC;
+        //cds::gc::HP::thread_gc threadGC;
 
         bool expired = false;
         while(!expired)
@@ -83,8 +83,7 @@ public:
                 const std::cv_status waitres = _cond.wait_for(lk, _pool->_expiry_timeout);
                 ++_pool->_active_threads;
                 _pool->_waiters.remove(shared_from_this());
-                if(std::cv_status::timeout == waitres
-                   && !static_cast<bool>(_task))
+                if(std::cv_status::timeout == waitres && !static_cast<bool>(_task))
                     expired = true;
                 else
                     expired = !(static_cast<bool>(_task) || !_sched->empty());
@@ -204,25 +203,6 @@ void thread_pool::_reset()
     _waiters.clear();
     _expired.clear();
     _shutdown = false;
-}
-
-void thread_pool::execute(std::shared_ptr<task> ptask)
-{
-    std::lock_guard<std::mutex> lk(_lock);
-    if(!_try_start(ptask)) {
-        _sched->push(std::move(ptask));
-        if(!_waiters.empty()) {
-            _waiters.front()->_cond.notify_one();
-            _waiters.pop_front();
-        }
-    }
-}
-
-void thread_pool::execute_with_delay(std::shared_ptr<task> ptask,
-        std::size_t delay_msecs, std::size_t period_msecs)
-{
-    auto dtask = std::make_shared<timed_task>(std::move(ptask), this);
-    dtask->start(delay_msecs, period_msecs);
 }
 
 /*!
@@ -347,6 +327,25 @@ bool thread_pool::wait_for_done(int msecs)
 void thread_pool::clear()
 {
     _sched->clear();
+}
+
+void thread_pool::execute(std::shared_ptr<task> ptask)
+{
+    std::lock_guard<std::mutex> lk(_lock);
+    if(!_try_start(ptask)) {
+        _sched->push(std::move(ptask));
+        if(!_waiters.empty()) {
+            _waiters.front()->_cond.notify_one();
+            _waiters.pop_front();
+        }
+    }
+}
+
+void thread_pool::execute_with_delay(std::shared_ptr<task> ptask,
+        std::size_t delay_msecs, std::size_t period_msecs)
+{
+    auto dtask = std::make_shared<timed_task>(std::move(ptask), this);
+    dtask->start(delay_msecs, period_msecs);
 }
 
 void thread_pool::shutdown()
