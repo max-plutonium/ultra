@@ -943,9 +943,8 @@ TEST(test_concurrent_queue, push_pull)
         EXPECT_EQ(std::string("-99"), ret_string);
     };
 
-    std::thread producer(producer_task);
+    std::thread(producer_task).detach();
     consumer_task();
-    producer.join();
 }
 
 TEST(test_concurrent_queue, push_pull_multithreaded)
@@ -1003,8 +1002,8 @@ TEST(test_concurrent_queue, push_pull_multithreaded)
 
     for(std::size_t idx = 0; idx < num_producers; ++idx) {
         constexpr std::size_t chunk_size = iterations / num_producers;
-        std::async(std::launch::async, producer_function,
-            chunk_size * idx, chunk_size * (idx + 1));
+        std::thread(producer_function, chunk_size * idx,
+            chunk_size * (idx + 1)).detach();
     }
 
     for(std::size_t idx = 0; idx < num_consumers; ++idx) {
@@ -1076,9 +1075,8 @@ TEST(test_concurrent_queue, push_pull_swap)
     };
 
     auto future = std::async(std::launch::async, consumer_task);
-    std::thread transformer(transformer_task);
+    std::thread(transformer_task).detach();
     producer_task();
-    transformer.join();
 
     EXPECT_EQ(std::size_t(499999500000), future.get());
 }

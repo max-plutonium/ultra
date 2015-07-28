@@ -76,7 +76,7 @@ public:
      *
      * \return true, если блокировка захвачена
      */
-  template <class Clock, class Duration>
+  template <typename Clock, typename Duration>
     inline bool
     try_lock_until(const std::chrono::time_point<Clock, Duration> &atime)
     {
@@ -93,9 +93,9 @@ public:
      *
      * \return true, если блокировка захвачена
      */
-  template <class Rep, class Period>
+  template <typename Rep, typename Period>
     inline bool
-    try_lock_for(const std::chrono::duration<Rep, Period>& rtime)
+    try_lock_for(const std::chrono::duration<Rep, Period> &rtime)
     { return try_lock_until(std::chrono::system_clock::now() + rtime); }
 
     /*!
@@ -109,7 +109,7 @@ public:
     void set_sleep_dur(unsigned usecs) noexcept;
 
     /// Устанавливает период ожидания спинлока \a rtime
-  template <class Rep, class Period>
+  template <typename Rep, typename Period>
     inline void
     set_sleep_dur(const std::chrono::duration<Rep, Period> &rtime)
     { set_sleep_dur(std::chrono::duration_cast<duration_type>(rtime).count()); }
