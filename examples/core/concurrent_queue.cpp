@@ -1,12 +1,19 @@
-//! [enqueue]
+//! [push]
 concurrent_queue<std::string, std::mutex> queue;
 ...
-queue.enqueue("123");
-//! [enqueue]
+queue.push("123");
+//! [push]
 
-//! [dequeue]
+//! [pull]
 concurrent_queue<std::string, std::mutex> queue;
 ...
 std::string str;
-queue.dequeue(str);
-//! [dequeue]
+queue.pull(str);
+//! [pull]
+
+//! [wait_pull]
+concurrent_queue<std::string, std::mutex> queue;
+...
+std::string str;
+queue.wait_pull(str);
+//! [wait_pull]

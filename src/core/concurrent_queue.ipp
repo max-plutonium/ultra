@@ -14,12 +14,14 @@ namespace ultra { namespace core {
       template<typename... Args>
     auto
     details::basic_forward_queue<Tp, Alloc>::
-    _create_node(Args&&... args) -> scoped_node_ptr
+    _create_node(Args &&...args) -> scoped_node_ptr
     {
         using traits = std::allocator_traits<node_alloc_type>;
         node_alloc_type &alloc = _get_node_allocator();
-        scoped_node_ptr node { traits::allocate(alloc, 1), *this };
-        traits::construct(alloc, node.get(), std::forward<Args>(args)...);
+        auto guarded_ptr = std::__allocate_guarded(alloc);
+        traits::construct(alloc, guarded_ptr.get(), std::forward<Args>(args)...);
+        scoped_node_ptr node { guarded_ptr.get(), *this };
+        guarded_ptr = nullptr;
         return node;
     }
 
@@ -187,10 +189,63 @@ namespace ultra { namespace core {
     }
 
 /*!
+ * \internal
+ *
+ * \brief Ждет появления элементов в очереди
+ *
+ * \return true, если очередь была закрыта.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    _wait(std::unique_lock<Lock> &lk)
+    {
+        _cond.wait(lk, [this]() { return !_base::_empty() || _closed; });
+        return _closed;
+    }
+
+/*!
+ * \internal
+ *
+ * \brief Ждет появления элементов в очереди до наступления времени \a atime
+ *
+ * \return true, если очередь не пуста или была закрыта.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template<typename Clock, typename Duration>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    _wait(std::unique_lock<Lock> &lk,
+          const std::chrono::time_point<Clock, Duration> &atime)
+    {
+        return _cond.wait_until(lk, atime,
+            [this]() { return !_base::_empty() || _closed; });
+    }
+
+/*!
+ * \internal
+ *
+ * \brief Ждет появления элементов в очереди в течение \a rtime
+ *
+ * \return true, если очередь не пуста или была закрыта.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template <typename Rep, typename Period>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    _wait(std::unique_lock<Lock> &lk,
+          const std::chrono::duration<Rep, Period> &rtime)
+    {
+        return _cond.wait_for(lk, rtime,
+            [this]() { return !_base::_empty() || _closed; });
+    }
+
+/*!
  * \brief Конструктор очереди, инициализирует поля
  */
   template <typename Tp, typename Lock, typename Alloc>
-    concurrent_queue<Tp, Lock, Alloc>::concurrent_queue() noexcept
+    concurrent_queue<Tp, Lock, Alloc>::
+    concurrent_queue() noexcept
     {
     }
 
@@ -198,8 +253,10 @@ namespace ultra { namespace core {
  * \brief Деструктор очереди
  */
   template <typename Tp, typename Lock, typename Alloc>
-    concurrent_queue<Tp, Lock, Alloc>::~concurrent_queue() noexcept
+    concurrent_queue<Tp, Lock, Alloc>::
+    ~concurrent_queue()
     {
+        close();
         _lock.lock();
         _base::_clear();
     }
@@ -286,6 +343,18 @@ namespace ultra { namespace core {
     }
 
 /*!
+ * \brief Закрывает очередь
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+    void
+    concurrent_queue<Tp, Lock, Alloc>::close()
+    {
+        std::lock_guard<Lock> lk(_lock);
+        _closed = true;
+        _cond.notify_all();
+    }
+
+/*!
  * \brief Обменивает содержимое очереди с \a other
  */
   template <typename Tp, typename Lock, typename Alloc>
@@ -315,25 +384,28 @@ namespace ultra { namespace core {
 
 /*!
  * \brief Конструирует элемент по переданному списку параметров
- * и добавляет его в очередь
+ * и добавляет его в очередь, если она не закрыта
  *
- * \snippet core/concurrent_queue.cpp enqueue
+ * \snippet core/concurrent_queue.cpp push
  *
- * \return Возвращает true, если успешно.
+ * \return Возвращает true, если очередь не закрыта.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename... Args>
     bool
-    concurrent_queue<Tp, Lock, Alloc>::enqueue(Args&&... args)
+    concurrent_queue<Tp, Lock, Alloc>::
+    push(Args &&...args)
     {
         static_assert(std::is_constructible<value_type, Args...>::value,
                       "template argument substituting Tp"
             " must be constructible from these arguments");
 
         typename _base::scoped_node_ptr node
-                = _base::_create_node(nullptr, std::forward<Args>(args)...);
+            = _base::_create_node(nullptr, std::forward<Args>(args)...);
 
         std::lock_guard<Lock> lk(_lock);
+        if(_closed) return false;
+        if(_base::_empty()) _cond.notify_one();
         _base::_hook(node.release());
         return true;
     }
@@ -342,13 +414,14 @@ namespace ultra { namespace core {
  * \brief Берет следующий элемент из очереди и передает его по ссылке
  * в \a val, если очередь не пуста
  *
- * \snippet core/concurrent_queue.cpp dequeue
+ * \snippet core/concurrent_queue.cpp pull
  *
  * \return false, если очередь уже пуста, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
     bool
-    concurrent_queue<Tp, Lock, Alloc>::dequeue(value_type &val)
+    concurrent_queue<Tp, Lock, Alloc>::
+    pull(value_type &val)
     {
         typename _base::scoped_node_ptr node { nullptr, *this };
 
@@ -366,23 +439,121 @@ namespace ultra { namespace core {
     }
 
 /*!
- * \brief Конструирует элемент по переданному списку параметров и
- * добавляет его в очередь, не производя никаких блокировок
+ * \brief Ждёт, пока очередь перестанет быть пустой, берет первый
+ * элемент из очереди и передает его по ссылке в \a val, если
+ * очередь не закрыта
  *
- * \return Возвращает true, если успешно.
+ * \snippet core/concurrent_queue.cpp wait_pull
+ *
+ * \return false, если очередь уже закрыта, иначе true.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    wait_pull(value_type &val)
+    {
+        typename _base::scoped_node_ptr node { nullptr, *this };
+
+        {
+            std::unique_lock<Lock> lk(_lock);
+            if(_wait(lk)) return false; // если очередь закрыта
+            node = _base::_unhook_next();
+        }
+
+        if(node) {
+            val = std::move_if_noexcept(node->t);
+            return true;
+        }
+
+        return false;
+    }
+
+/*!
+ * \brief Ждёт до наступления времени \a atime, пока очередь
+ * перестанет быть пустой, берет первый элемент из очереди и передает
+ * его по ссылке в \a val, если очередь не закрыта
+ *
+ * \snippet core/concurrent_queue.cpp wait_pull
+ *
+ * \return false, если очередь уже закрыта, иначе true.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template <typename Clock, typename Duration>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    wait_pull(const std::chrono::time_point<Clock, Duration> &atime,
+              value_type &val)
+    {
+        typename _base::scoped_node_ptr node { nullptr, *this };
+
+        {
+            std::unique_lock<Lock> lk(_lock);
+            if(_wait(lk, atime) && _closed) return false; // если очередь закрыта
+            node = _base::_unhook_next();
+        }
+
+        if(node) {
+            val = std::move_if_noexcept(node->t);
+            return true;
+        }
+
+        return false;
+    }
+
+/*!
+ * \brief Ждёт в течение \a rtime, пока очередь перестанет быть пустой,
+ * берет первый элемент из очереди и передает его по ссылке в \a val, если
+ * очередь не закрыта
+ *
+ * \snippet core/concurrent_queue.cpp wait_pull
+ *
+ * \return false, если очередь уже закрыта, иначе true.
+ */
+  template <typename Tp, typename Lock, typename Alloc>
+      template <typename Rep, typename Period>
+    bool
+    concurrent_queue<Tp, Lock, Alloc>::
+    wait_pull(const std::chrono::duration<Rep, Period> &rtime,
+              value_type &val)
+    {
+        typename _base::scoped_node_ptr node { nullptr, *this };
+
+        {
+            std::unique_lock<Lock> lk(_lock);
+            if(_wait(lk, rtime) && _closed) return false; // если очередь закрыта
+            node = _base::_unhook_next();
+        }
+
+        if(node) {
+            val = std::move_if_noexcept(node->t);
+            return true;
+        }
+
+        return false;
+    }
+
+/*!
+ * \brief Конструирует элемент по переданному списку параметров и,
+ * не производя никаких блокировок, добавляет его в очередь, если она не закрыта
+ *
+ * \return Возвращает true, если очередь не закрыта.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename... Args>
     bool
-    concurrent_queue<Tp, Lock, Alloc>::enqueue_unsafe(Args&&... args)
+    concurrent_queue<Tp, Lock, Alloc>::
+    push_unsafe(Args &&...args)
     {
         static_assert(std::is_constructible<value_type, Args...>::value,
                       "template argument substituting Tp"
             " must be constructible from these arguments");
 
+        if(_closed) return false;
+        const bool need_notify = _base::_empty();
         typename _base::scoped_node_ptr node
-                = _base::_create_node(nullptr, std::forward<Args>(args)...);
+            = _base::_create_node(nullptr, std::forward<Args>(args)...);
         _base::_hook(node.release());
+        if(need_notify) _cond.notify_one();
         return true;
     }
 
@@ -394,7 +565,8 @@ namespace ultra { namespace core {
  */
   template <typename Tp, typename Lock, typename Alloc>
     bool
-    concurrent_queue<Tp, Lock, Alloc>::dequeue_unsafe(value_type &val)
+    concurrent_queue<Tp, Lock, Alloc>::
+    pull_unsafe(value_type &val)
     {
         typename _base::scoped_node_ptr node = _base::_unhook_next();
 
@@ -405,7 +577,6 @@ namespace ultra { namespace core {
 
         return false;
     }
-
 
 } // namespace core
 
