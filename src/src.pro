@@ -57,7 +57,6 @@ HEADERS += \
     core/ioservice_pool.h \
     port.h \
     core/core_p.h \
-    core/schedulers.h \
     core/network_session.h \
     messages.h \
     genetic.h \
@@ -85,7 +84,6 @@ SOURCES += \
     core/ioservice_pool.cpp \
     port.cpp \
     core/core.cpp \
-    core/schedulers.cpp \
     core/network_session.cpp \
     messages.cpp \
     genetic.cpp \

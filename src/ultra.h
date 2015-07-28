@@ -313,69 +313,6 @@ public:
     inline bool closed() const { return stopped(); }
 };
 
-/*!
- * \brief Тип планирования исполнения задач
- */
-enum class schedule_type {
-    fifo, lifo, prio
-};
-
-/*!
- * \brief Интерфейс планировщика исполнения задач
- */
-class scheduler : public std::enable_shared_from_this<scheduler>
-{
-protected:
-    mutable std::mutex _lock;
-    std::condition_variable _cond;
-    bool stopped = false;
-
-public:
-    virtual ~scheduler() = default;
-
-    /*!
-     * \brief Помещает задачу в очередь
-     */
-    virtual void push(std::shared_ptr<task>) = 0;
-
-    /*!
-     * \brief Возвращает задачу, которую надо исполнить, при этом
-     * может ждать ее появления \a msecs миллисекунд
-     */
-    virtual std::shared_ptr<task> schedule(std::chrono::milliseconds msecs =
-            std::chrono::milliseconds(0)) = 0;
-
-    /*!
-     * \brief Возвращает текущий размер очереди задач
-     */
-    virtual std::size_t size() const = 0;
-
-    /*!
-     * \brief Возвращает true, если очередь задач пуста
-     */
-    virtual bool empty() const = 0;
-
-    /*!
-     * \brief Очищает очередь задач планировщика
-     */
-    virtual void clear() = 0;
-
-    /*!
-     * \brief Останавливает выполнение планировщика
-     */
-    inline void stop() {
-        std::lock_guard<std::mutex> lk(_lock); stopped = true;
-    }
-
-    /*!
-     * \brief Возвращает объект планировщика исходя из переданного
-     * в \a type типа планирования задач
-     */
-    static std::shared_ptr<scheduler> make(schedule_type type);
-};
-
-using sched_ptr = std::shared_ptr<scheduler>;
-
 } // namespace ultra
 
 #endif // ULTRA_H

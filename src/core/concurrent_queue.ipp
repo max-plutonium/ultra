@@ -200,7 +200,7 @@ namespace ultra { namespace core {
     concurrent_queue<Tp, Lock, Alloc>::
     _wait(std::unique_lock<Lock> &lk)
     {
-        _cond.wait(lk, [this]() { return !_base::_empty() || _closed; });
+        _cond.wait(lk, [this]() { return _closed || !_base::_empty(); });
         return _closed;
     }
 
@@ -209,7 +209,7 @@ namespace ultra { namespace core {
  *
  * \brief Ждет появления элементов в очереди до наступления времени \a atime
  *
- * \return true, если очередь не пуста или была закрыта.
+ * \return true, если очередь была закрыта.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template<typename Clock, typename Duration>
@@ -218,8 +218,9 @@ namespace ultra { namespace core {
     _wait(std::unique_lock<Lock> &lk,
           const std::chrono::time_point<Clock, Duration> &atime)
     {
-        return _cond.wait_until(lk, atime,
-            [this]() { return !_base::_empty() || _closed; });
+        _cond.wait_until(lk, atime, [this]() {
+            return _closed || !_base::_empty(); });
+        return _closed;
     }
 
 /*!
@@ -227,7 +228,7 @@ namespace ultra { namespace core {
  *
  * \brief Ждет появления элементов в очереди в течение \a rtime
  *
- * \return true, если очередь не пуста или была закрыта.
+ * \return true, если очередь была закрыта.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Rep, typename Period>
@@ -236,8 +237,9 @@ namespace ultra { namespace core {
     _wait(std::unique_lock<Lock> &lk,
           const std::chrono::duration<Rep, Period> &rtime)
     {
-        return _cond.wait_for(lk, rtime,
-            [this]() { return !_base::_empty() || _closed; });
+        _cond.wait_for(lk, rtime, [this]() {
+            return _closed || !_base::_empty(); });
+        return _closed;
     }
 
 /*!
@@ -445,7 +447,7 @@ namespace ultra { namespace core {
  *
  * \snippet core/concurrent_queue.cpp wait_pull
  *
- * \return false, если очередь уже закрыта, иначе true.
+ * \return false, если очередь пуста или уже закрыта, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
     bool
@@ -475,7 +477,7 @@ namespace ultra { namespace core {
  *
  * \snippet core/concurrent_queue.cpp wait_pull
  *
- * \return false, если очередь уже закрыта, иначе true.
+ * \return false, если очередь пуста или уже закрыта, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Clock, typename Duration>
@@ -488,7 +490,7 @@ namespace ultra { namespace core {
 
         {
             std::unique_lock<Lock> lk(_lock);
-            if(_wait(lk, atime) && _closed) return false; // если очередь закрыта
+            if(_wait(lk, atime)) return false; // если очередь закрыта
             node = _base::_unhook_next();
         }
 
@@ -507,7 +509,7 @@ namespace ultra { namespace core {
  *
  * \snippet core/concurrent_queue.cpp wait_pull
  *
- * \return false, если очередь уже закрыта, иначе true.
+ * \return false, если очередь пуста или уже закрыта, иначе true.
  */
   template <typename Tp, typename Lock, typename Alloc>
       template <typename Rep, typename Period>
@@ -520,7 +522,7 @@ namespace ultra { namespace core {
 
         {
             std::unique_lock<Lock> lk(_lock);
-            if(_wait(lk, rtime) && _closed) return false; // если очередь закрыта
+            if(_wait(lk, rtime)) return false; // если очередь закрыта
             node = _base::_unhook_next();
         }
 
