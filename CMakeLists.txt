@@ -25,6 +25,10 @@ add_definitions("-DULTRA_EXPORT=__attribute__((visibility (\"default\")))")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -fstack-check")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-add_subdirectory(src/ultra)
+include_directories(src/executors/include)
+
 add_subdirectory(src/googletest/googlemock)
+
+add_subdirectory(src/ultra)
+
 add_subdirectory(src/tests)

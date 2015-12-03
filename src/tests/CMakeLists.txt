@@ -24,7 +24,7 @@ include_directories(SYSTEM ../googletest/googletest/include)
 include_directories(SYSTEM ../googletest/googlemock/include)
 
 set(SOURCES
-    main.cpp
+    main.cc
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
