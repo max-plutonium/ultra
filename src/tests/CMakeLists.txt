@@ -25,10 +25,11 @@ include_directories(SYSTEM ../googletest/googlemock/include)
 
 set(SOURCES
     main.cc
+    test-node.cc
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} gmock)
+target_link_libraries(${PROJECT_NAME} ultra gmock)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "-debug")
 

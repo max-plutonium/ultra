@@ -25,19 +25,28 @@ add_definitions("-DULTRA_VERSION=${VERSION}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} \
     -fvisibility=hidden -fvisibility-inlines-hidden")
 
+find_package(Boost 1.59.0 REQUIRED system thread)
+
 set(PUBLIC_HEADERS
+    node.h
+    message_handler.h
 )
 
 set(HEADERS
+    node.h
+    message_handler.h
 )
 
 set(SOURCES
+    node.cc
+    message_handler.cc
 )
 
-#add_library(${PROJECT_NAME} SHARED ${HEADERS} ${SOURCES})
-#set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${VERSION}" SOVERSION "0")
-#
-#set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "-debug")
-#
-#install(TARGETS ${PROJECT_NAME} DESTINATION lib)
-#install(FILES ${PUBLIC_HEADERS} DESTINATION ultra)
+add_library(${PROJECT_NAME} SHARED ${HEADERS} ${SOURCES})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${VERSION}" SOVERSION "0")
+target_link_libraries(${PROJECT_NAME} stdc++ ${Boost_LIBRARIES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "-debug")
+
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(FILES ${PUBLIC_HEADERS} DESTINATION ultra)
