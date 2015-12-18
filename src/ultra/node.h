@@ -54,8 +54,10 @@ public:
             });
         }
 
+        const auto addr = address();
+
         for(auto &handler : handlers)
-            handler->handle_message(std::move(msg), address());
+            handler->handle_message(msg, addr);
     }
 
   template <typename Message>
